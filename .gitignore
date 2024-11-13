@@ -1,7 +1,8 @@
+.DS_store
+
 /shaka-player
 /video-hls
 /video-dash
-sam2-try/segment-anything-2
-.DS_store
-sam2-try/frames
-sam2-try/envv
+sam2seg/segment-anything-2
+sam2seg/frames
+sam2seg/envv
