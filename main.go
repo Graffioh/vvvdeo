@@ -25,7 +25,7 @@ func min(a int64, b int64) int64 {
 }
 
 func videoHandlerMP4(w http.ResponseWriter, r *http.Request) {
-	videoPath := "./sam2-try/jojorun.mp4"
+	videoPath := "./sam2seg/jojorun.mp4"
 	videoData, err := os.Open(videoPath)
 	if err != nil {
 		log.Printf("Error opening video file: %v", err)
@@ -349,7 +349,7 @@ func inferenceFramesHandler(w http.ResponseWriter, r *http.Request) {
 
 func segmentedFrameHandler(w http.ResponseWriter, r *http.Request) {
 	// Define the directory to search for files.
-	dir := "./sam2-try/static/"
+	dir := "./sam2seg/static/"
 
 	// Find the latest file in the directory.
 	latestFile, err := getLatestFile(dir)

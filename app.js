@@ -94,14 +94,14 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("result:", data);
 
         const segmentedFrame = document.getElementById("segmented-frame");
-        segmentedFrame.src = "./sam2-try/" + data.segmented_image_path;
+        segmentedFrame.src = "./sam2seg/" + data.segmented_image_path;
         segmentedFrame.style.display = "block";
 
         const imageContainer = document.getElementById("image-container");
         segmentedImages = data.segmented_image_paths;
         segmentedImages.forEach((imgName) => {
           const img = new Image();
-          img.src = "./sam2-try/" + imgName;
+          img.src = "./sam2seg/" + imgName;
           img.alt = imgName;
           imageContainer.appendChild(img);
         });
@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
         segmentedImages = data.segmented_image_paths;
         segmentedImages.forEach((imgName) => {
           const img = new Image();
-          img.src = "./sam2-try/" + imgName;
+          img.src = "./sam2seg/" + imgName;
           img.alt = imgName;
           imageContainer.appendChild(img);
         });

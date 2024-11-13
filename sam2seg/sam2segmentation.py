@@ -149,7 +149,7 @@ app = Flask(__name__)
 
 # Setup device and model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sam2_checkpoint = "./segment-anything-2/checkpoints/sam2.1_hiera_tiny.pt"
+sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_tiny.pt"
 model_cfg = "./configs/sam2.1/sam2.1_hiera_t.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
