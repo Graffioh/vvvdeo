@@ -56,27 +56,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoElement = document.getElementById("shaka-player-video");
   const coordinates = [];
   const labels = [];
+  const shapesContainer = document.getElementById("shapes-container");
+
+  function addPoint(event, shapeType, label) {
+    const videoRect = videoElement.getBoundingClientRect();
+    const scaleX = videoElement.videoWidth / videoElement.offsetWidth;
+    const scaleY = videoElement.videoHeight / videoElement.offsetHeight;
+
+    const x = event.clientX - videoRect.left;
+    const y = event.clientY - videoRect.top;
+
+    coordinates.push({
+      x: x * scaleX,
+      y: y * scaleY,
+    });
+    labels.push(label);
+
+    const shape = document.createElement("div");
+    shape.className = shapeType;
+    shape.style.left = `${x}px`;
+    shape.style.top = `${y}px`;
+    shapesContainer.appendChild(shape);
+  }
 
   videoElement.addEventListener("contextmenu", (event) => {
-    const rect = videoElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    console.log("X: " + x);
-    console.log("Y: " + y);
-
-    coordinates.push({ x, y });
-    labels.push(1);
+    addPoint(event, "circle", 1);
   });
 
   videoElement.addEventListener("auxclick", (event) => {
-    const rect = videoElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    console.log("X label: " + x);
-    console.log("Y label: " + y);
-
-    coordinates.push({ x, y });
-    labels.push(0);
+    addPoint(event, "square", 0);
   });
 
   const inferenceButtonElement = document.getElementById("inference-btn");

@@ -217,8 +217,6 @@ def predict():
 
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
-    print("YOOOOOOOOOOOOO")
-
     inference_state = predictor.init_state(video_path=video_dir)
     predictor.reset_state(inference_state)
 
@@ -269,13 +267,10 @@ def predict_frames():
 
         video_segments = {}  
         for out_frame_idx, out_obj_ids, out_mask_logits2 in predictor.propagate_in_video(inference_state):
-            print("+++++++++++++")
             video_segments[out_frame_idx] = {
                 out_obj_id: (out_mask_logits2[i] > 0.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
-
-        print("00000000000")
 
         output_dir = "./static"
         os.makedirs(output_dir, exist_ok=True)
@@ -289,9 +284,7 @@ def predict_frames():
         segmented_image_paths = []
         vis_frame_stride = 5
         for out_frame_idx in range(0, len(frame_names), vis_frame_stride):
-            print("111111111111")
             for out_obj_id, out_mask in video_segments[out_frame_idx].items():
-                print("22222")
                 mask_data = out_mask
                 color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)  
                 h, w = mask_data.shape[-2:]

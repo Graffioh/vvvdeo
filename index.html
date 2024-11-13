@@ -52,6 +52,35 @@
             font-weight: bold;
             color: white;
         }
+        .video-container {
+            position: relative;
+            display: inline-block; /* Contains the video dimensions */
+        }
+
+        #shapes-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #shapes-container div {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%); /* Center the shapes on the cursor */
+        }
+
+        #shapes-container .circle {
+            border-radius: 50%;
+            background-color: green;
+        }
+
+        #shapes-container .square {
+            background-color: red;
+        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,8 +101,11 @@
                 <button id="dash-btn">DASH</button>
             </div>
             <p hidden id="loading-msg">Converting the video...</p>
-            <video hidden id="shaka-player-video" controls width="1080">
-            </video>
+             <div class="video-container">
+                <video hidden id="shaka-player-video" controls width="1080">
+                </video>
+                <div id="shapes-container"></div> 
+            </div>
         </div>
         <button id="inference-btn">Run inference</button>
         <button id="inference-frames-btn">Run inference (FRAMES)</button>
