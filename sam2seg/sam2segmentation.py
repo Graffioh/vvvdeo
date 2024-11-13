@@ -268,26 +268,31 @@ def predict_frames():
         mask_image_rgb = (mask_image[..., :3] * 255).astype(np.uint8)  
 
         video_segments = {}  
-        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
+        for out_frame_idx, out_obj_ids, out_mask_logits2 in predictor.propagate_in_video(inference_state):
+            print("+++++++++++++")
             video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy()
+                out_obj_id: (out_mask_logits2[i] > 0.0).cpu().numpy()
                 for i, out_obj_id in enumerate(out_obj_ids)
             }
+
+        print("00000000000")
 
         output_dir = "./static"
         os.makedirs(output_dir, exist_ok=True)
 
         frame_names = [
             p for p in os.listdir(video_dir)
-            if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]
+            if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG", ".png"]
         ]
         frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
 
         segmented_image_paths = []
-        vis_frame_stride = 30
+        vis_frame_stride = 5
         for out_frame_idx in range(0, len(frame_names), vis_frame_stride):
+            print("111111111111")
             for out_obj_id, out_mask in video_segments[out_frame_idx].items():
-                mask_data = (out_mask > 0.0).cpu().numpy()
+                print("22222")
+                mask_data = out_mask
                 color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)  
                 h, w = mask_data.shape[-2:]
                 mask_image = mask_data.reshape(h, w, 1) * color.reshape(1, 1, -1)
