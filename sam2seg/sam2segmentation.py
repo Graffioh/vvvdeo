@@ -134,6 +134,8 @@ from flask import Flask, request, jsonify, send_file
 from sam2.build_sam import build_sam2_video_predictor
 from PIL import Image, ImageOps, ImageFilter
 import time
+import cv2
+import supervision as sv
 
 def clear_directory(directory_path):
     for filename in os.listdir(directory_path):
@@ -147,10 +149,9 @@ clear_directory("./static/")
 
 app = Flask(__name__)
 
-# Setup device and model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_tiny.pt"
-model_cfg = "./configs/sam2.1/sam2.1_hiera_t.yaml"
+sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
+model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
 video_dir = "./frames"
@@ -221,7 +222,6 @@ def predict_frames():
     predictor.reset_state(inference_state)
 
     try:
-        # Parse points from request
         data = request.get_json()
         print("DATA:")
         print(data)
@@ -253,55 +253,41 @@ def predict_frames():
             labels=labels,
         )
 
-        mask_data = (out_mask_logits[0] > 0.0).cpu().numpy()
-        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)  
-        h, w = mask_data.shape[-2:]
-        mask_image = mask_data.reshape(h, w, 1) * color.reshape(1, 1, -1)
+        colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
+        mask_annotator = sv.MaskAnnotator(
+        color=sv.ColorPalette.from_hex(colors),
+        color_lookup=sv.ColorLookup.TRACK)
 
-        frame_path = os.path.join(video_dir, f"{ann_frame_idx:05d}.jpg")
-        if not os.path.exists(frame_path):
-            return jsonify({"error": f"Frame not found: {frame_path}"}), 404
+        video_info = sv.VideoInfo.from_video_path("./jojorun.mp4")
+        frames_paths = sorted(sv.list_files_with_extensions(
+            directory="./frames/", 
+            extensions=["jpg"]))
 
-        frame_image = Image.open(frame_path).convert("RGBA")
-        mask_image_rgb = (mask_image[..., :3] * 255).astype(np.uint8)  
+        with sv.VideoSink("./static/masked.mp4", video_info=video_info) as sink:
+            for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+                if not os.path.exists(frames_paths[frame_idx]):
+                    print(f"Warning: Frame '{frames_paths}' does not exist.")
+                    continue
+                frame = cv2.imread(frames_paths[frame_idx])
+                if frame is None:
+                    print(f"Warning: Could not read frame '{frames_paths}'.")
+                    continue
 
-        video_segments = {}  
-        for out_frame_idx, out_obj_ids, out_mask_logits2 in predictor.propagate_in_video(inference_state):
-            video_segments[out_frame_idx] = {
-                out_obj_id: (out_mask_logits2[i] > 0.0).cpu().numpy()
-                for i, out_obj_id in enumerate(out_obj_ids)
-            }
-
-        output_dir = "./static"
-        os.makedirs(output_dir, exist_ok=True)
-
-        frame_names = [
-            p for p in os.listdir(video_dir)
-            if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG", ".png"]
-        ]
-        frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
-
-        segmented_image_paths = []
-        vis_frame_stride = 5
-        for out_frame_idx in range(0, len(frame_names), vis_frame_stride):
-            for out_obj_id, out_mask in video_segments[out_frame_idx].items():
-                mask_data = out_mask
-                color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)  
-                h, w = mask_data.shape[-2:]
-                mask_image = mask_data.reshape(h, w, 1) * color.reshape(1, 1, -1)
-                mask_image_rgb = (mask_image[..., :3] * 255).astype(np.uint8)  
-                segmented_image = Image.fromarray(mask_image_rgb, 'RGB')
-
-                timestamp = str(time.time_ns())
-                segmented_image_path = os.path.join(output_dir, f"segmented_frame_{timestamp}.png")
-                print(segmented_image_path)
-                segmented_image.save(segmented_image_path)
-                segmented_image_paths.append(segmented_image_path)
+                masks = (mask_logits > 0.0).cpu().numpy()
+                N, X, H, W = masks.shape
+                masks = masks.reshape(N * X, H, W)
+                detections = sv.Detections(
+                    xyxy=sv.mask_to_xyxy(masks=masks),
+                    mask=masks,
+                    tracker_id=np.array(object_ids)
+                )
+                frame = mask_annotator.annotate(frame, detections)
+                sink.write_frame(frame)
 
         return jsonify({
-            "status": "success",
-            "segmented_image_paths": segmented_image_paths
+            "status": "success"
         })
+
 
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
