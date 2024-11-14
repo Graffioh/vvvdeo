@@ -3,88 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>veedeo</title>
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f8f8;
-        }
-        header {
-            background-color: #181818;
-            color: white;
-            padding: 1.5em;
-            text-align: center;
-        }
-        main {
-            padding: 2.5em;
-        }
-        #video-btn-div {
-            background-color: #3d3d3d;
-            padding: 1.2em;
-            border-radius: 8px;
-        }
-        #btns-div {
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 12px;
-            width: 100px;
-            gap: 10px;
-        }
-        button {
-            background-color: #7f8c8d;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #95a5a6;
-        }
-        video {
-            width: 100%;
-            max-width: 1200px;
-            height: auto;
-        }
-        #loading-msg {
-            font-weight: bold;
-            color: white;
-        }
-        .video-container {
-            position: relative;
-            display: inline-block; /* Contains the video dimensions */
-        }
 
-        #shapes-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        #shapes-container div {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            transform: translate(-50%, -50%); /* Center the shapes on the cursor */
-        }
-
-        #shapes-container .circle {
-            border-radius: 50%;
-            background-color: green;
-        }
-
-        #shapes-container .square {
-            background-color: red;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css"></style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
     <script src="shaka-player/dist/shaka-player.compiled.js"></script>
     <script type="module" src="app.js" defer></script>
 </head>
