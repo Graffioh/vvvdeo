@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>veedeo</title>
+    <title>v</title>
 
     <link rel="stylesheet" href="style.css"></style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,11 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
     <script src="shaka-player/dist/shaka-player.compiled.js"></script>
-    <script type="module" src="app.js" defer></script>
+    <script type="module" src="videoconversion.js" defer></script>
+    <script type="module" src="segmentation.js" defer></script>
 </head>
 <body>
     <header>
-        <h1>veedeo</h1>
+        <h1>v</h1>
     </header>
     <main>
         <p>ZA WARUDO!</p>
@@ -33,11 +34,9 @@
                 <div id="shapes-container"></div> 
             </div>
         </div>
-        <button id="inference-btn">Run inference (FRAME)</button>
-        <button id="inference-frames-btn">Run inference (VIDEO)</button>
+        <button id="inference-frame-btn">Run inference (FRAME)</button>
+        <button id="inference-video-btn">Run inference (VIDEO)</button>
         <img id="segmented-frame" src="" alt="Segmented Frame" style="display:none; max-width:100%;" />
-        <h2>SEGMENTS:</h2>
-        <div class="image-container" id="image-container"></div>
     </main>
 </body>
 </html>

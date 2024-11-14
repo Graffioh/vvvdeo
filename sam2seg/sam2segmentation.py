@@ -150,8 +150,8 @@ clear_directory("./static/")
 app = Flask(__name__)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
-model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
+sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_tiny.pt"
+model_cfg = "./configs/sam2.1/sam2.1_hiera_t.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
 video_dir = "./frames"
@@ -163,15 +163,8 @@ def predict():
 
     try:
         data = request.get_json()
-        print("DATA:")
-        print(data)
-
         points = data.get("coordinates", [])
         labels = data.get("labels", [])
-        print("POINTS:")
-        print(points)
-        print("LABELS:")
-        print(labels)
 
         if not points:
             return jsonify({"error": "Missing coordinates"}), 400
@@ -223,15 +216,8 @@ def predict_frames():
 
     try:
         data = request.get_json()
-        print("DATA:")
-        print(data)
-
         points = data.get("coordinates", [])
         labels = data.get("labels", [])
-        print("POINTS:")
-        print(points)
-        print("LABELS:")
-        print(labels)
 
         if not points:
             return jsonify({"error": "Missing coordinates"}), 400

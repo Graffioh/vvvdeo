@@ -1,4 +1,4 @@
-module veedeo.comm/m
+module veedeo
 
 go 1.22.3
 
