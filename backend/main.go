@@ -14,7 +14,6 @@ func main() {
 	http.HandleFunc("/zawarudo/*", handlers.VideoHandler)
 	http.HandleFunc("/inference-frame", handlers.InferenceFrameHandler)
 	http.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
-
 	http.Handle("/metrics", promhttp.Handler())
 
 	fmt.Printf("Server running on %v\n", port)

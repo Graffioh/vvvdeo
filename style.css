@@ -91,3 +91,10 @@ video {
     outline-style: solid;
     outline-color: white;
 }
+
+#seg-add {
+    background-color: green;
+}
+#seg-excl {
+    background-color: red;
+}

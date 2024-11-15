@@ -11,11 +11,61 @@ import (
 	"veedeo/util"
 )
 
+func handleHLSPlaylist(w http.ResponseWriter, fileName string) {
+	playlistData, err := os.ReadFile("../video-hls/" + fileName)
+	if err != nil {
+		http.Error(w, "Error reading HLS playlist file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/x-mpegURL")
+	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
+	w.WriteHeader(http.StatusOK)
+	w.Write(playlistData)
+}
+
+func handleHLSSegment(w http.ResponseWriter, r *http.Request, fileName string) {
+	segmentPath := "../video-hls/" + fileName
+	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	http.ServeFile(w, r, segmentPath)
+}
+
+func handleDASHPlaylist(w http.ResponseWriter, fileName string) {
+	manifestData, err := os.ReadFile("../video-dash/" + fileName)
+	if err != nil {
+		http.Error(w, "Error reading DASH manifest file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/dash+xml")
+	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
+	w.WriteHeader(http.StatusOK)
+	w.Write(manifestData)
+}
+
+func handleDASHSegment(w http.ResponseWriter, r *http.Request, fileName string) {
+	segmentPath := "../video-dash/" + fileName
+	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	http.ServeFile(w, r, segmentPath)
+}
+
+func isHLSFormat(path string) bool {
+	return strings.HasSuffix(path, ".m3u8") || strings.HasSuffix(path, ".ts")
+}
+
+func isDASHFormat(path string) bool {
+	return strings.HasSuffix(path, ".mpd") || strings.HasSuffix(path, ".webm")
+}
+
+func isMP4Format(path string) bool {
+	return strings.HasSuffix(path, ".mp4")
+}
+
 func VideoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	path := r.URL.Path
 
-	if strings.HasSuffix(path, ".m3u8") || strings.HasSuffix(path, ".ts") {
+	if isHLSFormat(path) {
 		if _, err := os.Stat("video-hls/master.m3u8"); os.IsNotExist(err) {
 			done := make(chan bool)
 			go func() {
@@ -26,7 +76,7 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		handleHLSvideo(w, r)
-	} else if strings.HasSuffix(path, ".mpd") || strings.HasSuffix(path, ".webm") {
+	} else if isDASHFormat(path) {
 		if _, err := os.Stat("video-dash/my_video_manifest.mpd"); os.IsNotExist(err) {
 			done := make(chan bool)
 			go func() {
@@ -37,7 +87,7 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		handleDASHvideo(w, r)
-	} else if strings.HasSuffix(path, ".mp4") {
+	} else if isMP4Format(path) {
 		handleMP4video(w, r)
 	} else {
 		http.NotFound(w, r)
@@ -107,7 +157,6 @@ func handleMP4video(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", remainingBytes))
 	w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, videoSize))
-	// w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 
 	w.WriteHeader(http.StatusPartialContent)
 
@@ -129,27 +178,17 @@ func handleMP4video(w http.ResponseWriter, r *http.Request) {
 func handleHLSvideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	fmt.Println(r.URL.Path)
 	fileName := strings.Split(r.URL.Path, "/")[2]
-	fmt.Println(fileName)
-	if strings.HasSuffix(r.URL.Path, ".m3u8") {
-		playlistData, err := os.ReadFile("../video-hls/" + fileName)
-		if err != nil {
-			http.Error(w, "Error reading HLS playlist file", http.StatusInternalServerError)
-			return
-		}
 
-		w.Header().Set("Content-Type", "application/x-mpegURL")
-		w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
-		w.WriteHeader(http.StatusOK)
-		w.Write(playlistData)
+	// HLS playlist
+	if strings.HasSuffix(r.URL.Path, ".m3u8") {
+		handleHLSPlaylist(w, fileName)
 		return
 	}
 
+	// HLS segment
 	if strings.HasSuffix(r.URL.Path, ".ts") {
-		segmentPath := "../video-hls/" + fileName
-		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
-		http.ServeFile(w, r, segmentPath)
+		handleHLSSegment(w, r, fileName)
 		return
 	}
 
@@ -160,24 +199,16 @@ func handleDASHvideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	fileName := strings.Split(r.URL.Path, "/")[2]
-	if strings.HasSuffix(r.URL.Path, ".mpd") {
-		manifestData, err := os.ReadFile("../video-dash/" + fileName)
-		if err != nil {
-			http.Error(w, "Error reading DASH manifest file", http.StatusInternalServerError)
-			return
-		}
 
-		w.Header().Set("Content-Type", "application/dash+xml")
-		w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
-		w.WriteHeader(http.StatusOK)
-		w.Write(manifestData)
+	// DASH playlist
+	if strings.HasSuffix(r.URL.Path, ".mpd") {
+		handleDASHPlaylist(w, fileName)
 		return
 	}
 
+	// DASH segment
 	if strings.HasSuffix(r.URL.Path, ".webm") {
-		segmentPath := "../video-dash/" + fileName
-		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
-		http.ServeFile(w, r, segmentPath)
+		handleDASHSegment(w, r, fileName)
 		return
 	}
 
