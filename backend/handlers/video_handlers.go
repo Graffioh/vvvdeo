@@ -8,7 +8,41 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"veedeo/util"
 )
+
+func VideoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	path := r.URL.Path
+
+	if strings.HasSuffix(path, ".m3u8") || strings.HasSuffix(path, ".ts") {
+		if _, err := os.Stat("video-hls/master.m3u8"); os.IsNotExist(err) {
+			done := make(chan bool)
+			go func() {
+				util.HLSConverter()
+				done <- true
+			}()
+			<-done
+		}
+
+		handleHLSvideo(w, r)
+	} else if strings.HasSuffix(path, ".mpd") || strings.HasSuffix(path, ".webm") {
+		if _, err := os.Stat("video-dash/my_video_manifest.mpd"); os.IsNotExist(err) {
+			done := make(chan bool)
+			go func() {
+				util.DASHConverter()
+				done <- true
+			}()
+			<-done
+		}
+
+		handleDASHvideo(w, r)
+	} else if strings.HasSuffix(path, ".mp4") {
+		handleMP4video(w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
 
 func min(a int64, b int64) int64 {
 	if a < b {
@@ -17,7 +51,7 @@ func min(a int64, b int64) int64 {
 	return b
 }
 
-func HandleMP4video(w http.ResponseWriter, r *http.Request) {
+func handleMP4video(w http.ResponseWriter, r *http.Request) {
 	videoPath := "./jojorun.mp4"
 	videoData, err := os.Open(videoPath)
 	if err != nil {
@@ -92,7 +126,7 @@ func HandleMP4video(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleHLSvideo(w http.ResponseWriter, r *http.Request) {
+func handleHLSvideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	fmt.Println(r.URL.Path)
@@ -122,7 +156,7 @@ func HandleHLSvideo(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid HLS request", http.StatusBadRequest)
 }
 
-func HandleDASHvideo(w http.ResponseWriter, r *http.Request) {
+func handleDASHvideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	fileName := strings.Split(r.URL.Path, "/")[2]
