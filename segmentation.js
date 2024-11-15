@@ -9,6 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const labels = [];
   const shapesContainer = document.getElementById("shapes-container");
 
+  const addPositiveLabelButton = document.getElementById("seg-add");
+  const addNegativeLabelButton = document.getElementById("seg-excl");
+  let isVideoPlayable = true;
+  let isPositiveLabel = true;
+
   function addPoint(event, shapeType, label) {
     const videoRect = videoElement.getBoundingClientRect();
     const scaleX = videoElement.videoWidth / videoElement.offsetWidth;
@@ -30,12 +35,25 @@ document.addEventListener("DOMContentLoaded", () => {
     shapesContainer.appendChild(shape);
   }
 
-  videoElement.addEventListener("contextmenu", (event) => {
-    addPoint(event, "circle", 1);
+  addPositiveLabelButton.addEventListener("click", () => {
+    isVideoPlayable = false;
+    isPositiveLabel = true;
   });
 
-  videoElement.addEventListener("auxclick", (event) => {
-    addPoint(event, "square", 0);
+  addNegativeLabelButton.addEventListener("click", () => {
+    isVideoPlayable = false;
+    isPositiveLabel = false;
+  });
+
+  videoElement.addEventListener("click", (event) => {
+    if (!isVideoPlayable) {
+      event.preventDefault();
+      if (isPositiveLabel) {
+        addPoint(event, "circle", 1);
+      } else {
+        addPoint(event, "square", 0);
+      }
+    }
   });
 
   const inferenceFrameButtonElement = document.getElementById(
