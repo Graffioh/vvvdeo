@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // VIDEO CONVERSION
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   const manifestUris = {
-    mp4: "http://localhost:8080/zawarudo.mp4",
+    mp4: "http://localhost:8080/zawarudo/zawarudo.mp4",
     hls: "http://localhost:8080/zawarudo/master.m3u8",
     dash: "http://localhost:8080/zawarudo/my_video_manifest.mpd",
   };
