@@ -17,6 +17,8 @@ main {
 }
 
 #video-btn-div {
+    margin-top: 10px;
+    margin-bottom: 10px;
     background-color: #3d3d3d;
     padding: 1.2em;
     border-radius: 8px;

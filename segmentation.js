@@ -38,11 +38,17 @@ document.addEventListener("DOMContentLoaded", () => {
   addPositiveLabelButton.addEventListener("click", () => {
     isVideoPlayable = false;
     isPositiveLabel = true;
+    document.body.style.cursor = "crosshair";
+    addPositiveLabelButton.style.color = "black";
+    addNegativeLabelButton.style.color = "white";
   });
 
   addNegativeLabelButton.addEventListener("click", () => {
     isVideoPlayable = false;
     isPositiveLabel = false;
+    document.body.style.cursor = "not-allowed";
+    addPositiveLabelButton.style.color = "white";
+    addNegativeLabelButton.style.color = "black";
   });
 
   videoElement.addEventListener("click", (event) => {
