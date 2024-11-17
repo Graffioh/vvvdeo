@@ -22,12 +22,14 @@ func handleHLSPlaylist(w http.ResponseWriter, fileName string) {
 	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
 	w.WriteHeader(http.StatusOK)
 	w.Write(playlistData)
+	return
 }
 
 func handleHLSSegment(w http.ResponseWriter, r *http.Request, fileName string) {
 	segmentPath := "../video-hls/" + fileName
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
 	http.ServeFile(w, r, segmentPath)
+	return
 }
 
 func handleDASHPlaylist(w http.ResponseWriter, fileName string) {
@@ -41,12 +43,14 @@ func handleDASHPlaylist(w http.ResponseWriter, fileName string) {
 	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
 	w.WriteHeader(http.StatusOK)
 	w.Write(manifestData)
+	return
 }
 
 func handleDASHSegment(w http.ResponseWriter, r *http.Request, fileName string) {
 	segmentPath := "../video-dash/" + fileName
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
 	http.ServeFile(w, r, segmentPath)
+	return
 }
 
 func isHLSFormat(path string) bool {

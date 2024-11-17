@@ -98,3 +98,11 @@ video {
 #seg-excl {
     background-color: red;
 }
+
+#hls-btn {
+    opacity: 30%;
+}
+
+#dash-btn {
+    opacity: 30%;
+}
