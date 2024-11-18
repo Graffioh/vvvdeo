@@ -3,8 +3,12 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 type VideoCoordinates struct {
@@ -65,6 +69,19 @@ func InferenceFrameHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func uploadImage(w http.ResponseWriter, file multipart.File, fileHeader *multipart.FileHeader) {
+	imgPath := filepath.Join("../sam2seg/img", fileHeader.Filename)
+	dst, err := os.Create(imgPath)
+	if err != nil {
+		http.Error(w, "Error creating file", http.StatusInternalServerError)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, "Error saving file in img dir", http.StatusInternalServerError)
+	}
+}
+
 func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -75,18 +92,33 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+
+	file, fileHeader, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Error retrieving image file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	jsonData := r.FormValue("data")
+	if jsonData == "" {
+		http.Error(w, "No JSON data provided", http.StatusBadRequest)
+		return
+	}
 
 	var points Points
-	if err := json.Unmarshal(body, &points); err != nil {
-		http.Error(w, "Error parsing JSON body", http.StatusBadRequest)
+	if err := json.Unmarshal([]byte(jsonData), &points); err != nil {
+		http.Error(w, "Error parsing JSON data", http.StatusBadRequest)
 		return
 	}
+
+	uploadImage(w, file, fileHeader)
+	imageName := fileHeader.Filename
 
 	coordsJSON, err := json.Marshal(points)
 	if err != nil {
@@ -94,7 +126,7 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pythonURL := "http://localhost:9000/predict-frames"
+	pythonURL := fmt.Sprintf("http://localhost:9000/predict-frames?image=%s", imageName)
 	resp, err := http.Post(pythonURL, "application/json", bytes.NewBuffer(coordsJSON))
 	if err != nil {
 		http.Error(w, "Error communicating with Python server", http.StatusInternalServerError)

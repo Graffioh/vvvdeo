@@ -3,7 +3,8 @@
 /shaka-player
 /video-hls
 /video-dash
-sam2seg/src/*
+sam2seg/src
 sam2seg/frames
 sam2seg/envv
 sam2seg/static
+sam2seg/img

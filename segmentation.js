@@ -89,28 +89,46 @@ document.addEventListener("DOMContentLoaded", () => {
     "inference-video-btn",
   );
 
+  const fileInput = document.getElementById("input-img");
+
   inferenceVideoButtonElement.addEventListener("click", () => {
+    const imageFile = fileInput.files[0];
+    const formData = new FormData();
+
+    formData.append("image", imageFile);
+    formData.append(
+      "data",
+      JSON.stringify({
+        coordinates: coordinates,
+        labels: labels,
+      }),
+    );
+
     fetch(backendUrl + "/inference-video", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ coordinates: coordinates, labels: labels }),
+      body: formData,
     })
       .then((response) => response.json())
       .then((data) => {
         console.log("result:", data);
-
-        const imageContainer = document.getElementById("image-container");
-        const segmentedImages = data.segmented_image_paths;
-        segmentedImages.forEach((imgName) => {
-          const img = new Image();
-          img.src = "./sam2seg/" + imgName;
-          img.alt = imgName;
-          imageContainer.appendChild(img);
-        });
       })
       .catch((error) => console.error("Error:", error));
   });
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+  // image preview
+  fileInput.addEventListener("change", (event) => {
+    const preview = document.getElementById("preview");
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      preview.src = reader.result;
+      preview.style.display = "block";
+    };
+
+    if (file) {
+      reader.readAsDataURL(file);
+    }
+  });
 });
