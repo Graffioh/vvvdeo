@@ -90,8 +90,11 @@ def predict_frames():
         points = data.get("coordinates", [])
         labels = data.get("labels", [])
         overlay_img_name = request.args.get("image")
+
+        mask_opacity = 0
+
         if not overlay_img_name:
-            return jsonify({"error": "No image provided"}), 400
+            mask_opacity = 100
 
         if not points:
             return jsonify({"error": "Missing coordinates"}), 400
@@ -115,7 +118,7 @@ def predict_frames():
         mask_annotator = sv.MaskAnnotator(
             color=sv.ColorPalette.from_hex(colors),
             color_lookup=sv.ColorLookup.TRACK,
-            opacity=0
+            opacity=mask_opacity
         )
 
         video_info = sv.VideoInfo.from_video_path("./jojorun.mp4")
@@ -123,19 +126,19 @@ def predict_frames():
             directory="./frames/",
             extensions=["jpg"]))
 
-        overlay_img = cv2.imread("./img/" + overlay_img_name, cv2.IMREAD_UNCHANGED)
-
-        if len(overlay_img.shape) == 2:
-            overlay_img = cv2.cvtColor(overlay_img, cv2.COLOR_GRAY2RGB)
+        overlay_img = None
+        if overlay_img_name is not None:
+            overlay_img = cv2.imread("./img/" + overlay_img_name, cv2.IMREAD_UNCHANGED)
 
         if overlay_img is not None:
+            if len(overlay_img.shape) == 2:
+                overlay_img = cv2.cvtColor(overlay_img, cv2.COLOR_GRAY2RGB)
+
             if len(overlay_img.shape) == 3 and overlay_img.shape[2] == 3:
                 alpha_channel = np.ones(overlay_img.shape[:2], dtype=overlay_img.dtype) * 255
                 overlay_img = cv2.merge([overlay_img, alpha_channel])
             elif len(overlay_img.shape) != 3 or overlay_img.shape[2] != 4:
                 raise ValueError("Overlay image must be in RGB or RGBA format")
-        else:
-            raise ValueError("Could not load overlay image")
 
         with sv.VideoSink("./static/video_result.mp4", video_info=video_info) as sink:
             for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
@@ -160,36 +163,38 @@ def predict_frames():
 
                 result_frame = frame.copy()
 
-                for i, mask in enumerate(masks):
-                    if not mask.any():
-                        continue
 
-                    y_indices, x_indices = np.where(mask)
-                    if len(y_indices) == 0 or len(x_indices) == 0:
-                        continue
+                if overlay_img is not None:
+                    for i, mask in enumerate(masks):
+                        if not mask.any():
+                            continue
 
-                    y_min, y_max = np.min(y_indices), np.max(y_indices)
-                    x_min, x_max = np.min(x_indices), np.max(x_indices)
+                        y_indices, x_indices = np.where(mask)
+                        if len(y_indices) == 0 or len(x_indices) == 0:
+                            continue
 
-                    mask_height = y_max - y_min + 1
-                    mask_width = x_max - x_min + 1
+                        y_min, y_max = np.min(y_indices), np.max(y_indices)
+                        x_min, x_max = np.min(x_indices), np.max(x_indices)
 
-                    resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
+                        mask_height = y_max - y_min + 1
+                        mask_width = x_max - x_min + 1
 
-                    current_mask = mask[y_min:y_max+1, x_min:x_max+1]
+                        resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
 
-                    overlay_color = resized_overlay[:, :, :3]
-                    overlay_alpha = resized_overlay[:, :, 3] / 255.0
+                        current_mask = mask[y_min:y_max+1, x_min:x_max+1]
 
-                    overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
-                    current_mask = np.expand_dims(current_mask, axis=2)
+                        overlay_color = resized_overlay[:, :, :3]
+                        overlay_alpha = resized_overlay[:, :, 3] / 255.0
 
-                    region = result_frame[y_min:y_max+1, x_min:x_max+1]
+                        overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
+                        current_mask = np.expand_dims(current_mask, axis=2)
 
-                    blended = region * (1 - (overlay_alpha * current_mask)) + \
-                             overlay_color * (overlay_alpha * current_mask)
+                        region = result_frame[y_min:y_max+1, x_min:x_max+1]
 
-                    result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
+                        blended = region * (1 - (overlay_alpha * current_mask)) + \
+                                overlay_color * (overlay_alpha * current_mask)
+
+                        result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
 
                 result_frame = mask_annotator.annotate(result_frame, detections)
 

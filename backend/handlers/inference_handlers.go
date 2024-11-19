@@ -46,7 +46,7 @@ func InferenceFrameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pythonURL := "http://localhost:9000/predict" // Python server URL
+	pythonURL := "http://localhost:9000/predict"
 	resp, err := http.Post(pythonURL, "application/json", bytes.NewBuffer(coordsJSON))
 	if err != nil {
 		http.Error(w, "Error communicating with Python server", http.StatusInternalServerError)
@@ -91,11 +91,12 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, fileHeader, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, "Error retrieving image file", http.StatusBadRequest)
-		return
+	var imageName string = ""
+	if file != nil {
+		uploadImage(w, file, fileHeader)
+		imageName = fileHeader.Filename
+		defer file.Close()
 	}
-	defer file.Close()
 
 	jsonData := r.FormValue("data")
 	if jsonData == "" {
@@ -108,9 +109,6 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing JSON data", http.StatusBadRequest)
 		return
 	}
-
-	uploadImage(w, file, fileHeader)
-	imageName := fileHeader.Filename
 
 	coordsJSON, err := json.Marshal(points)
 	if err != nil {
