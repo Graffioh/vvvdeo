@@ -66,7 +66,6 @@ func isMP4Format(path string) bool {
 }
 
 func VideoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	path := r.URL.Path
 
 	if isHLSFormat(path) {
@@ -180,8 +179,6 @@ func handleMP4video(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHLSvideo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	fileName := strings.Split(r.URL.Path, "/")[2]
 
 	// HLS playlist
@@ -200,8 +197,6 @@ func handleHLSvideo(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDASHvideo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	fileName := strings.Split(r.URL.Path, "/")[2]
 
 	// DASH playlist
