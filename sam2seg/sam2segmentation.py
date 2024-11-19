@@ -81,6 +81,42 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
 
+def apply_masked_overlay(frame, masks, overlay_img):
+    result_frame = frame.copy()
+
+    if overlay_img is None:
+        return result_frame
+
+    for mask in masks:
+        if not mask.any():
+            continue
+
+        y_indices, x_indices = np.where(mask)
+        if len(y_indices) == 0 or len(x_indices) == 0:
+            continue
+
+        y_min, y_max = np.min(y_indices), np.max(y_indices)
+        x_min, x_max = np.min(x_indices), np.max(x_indices)
+        mask_height = y_max - y_min + 1
+        mask_width = x_max - x_min + 1
+
+        resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
+
+        current_mask = mask[y_min:y_max+1, x_min:x_max+1]
+
+        overlay_color = resized_overlay[:, :, :3]
+        overlay_alpha = resized_overlay[:, :, 3] / 255.0
+        overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
+        current_mask = np.expand_dims(current_mask, axis=2)
+
+        region = result_frame[y_min:y_max+1, x_min:x_max+1]
+        blended = region * (1 - (overlay_alpha * current_mask)) + \
+                 overlay_color * (overlay_alpha * current_mask)
+
+        result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
+
+    return result_frame
+
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
     inference_state = predictor.init_state(video_path=video_dir)
@@ -92,7 +128,6 @@ def predict_frames():
         overlay_img_name = request.args.get("image")
 
         mask_opacity = 0
-
         if not overlay_img_name:
             mask_opacity = 100
 
@@ -161,44 +196,10 @@ def predict_frames():
                     tracker_id=np.array(object_ids)
                 )
 
-                result_frame = frame.copy()
+                result_frame = apply_masked_overlay(frame, masks, overlay_img)
+                final_frame = mask_annotator.annotate(result_frame, detections)
 
-
-                if overlay_img is not None:
-                    for i, mask in enumerate(masks):
-                        if not mask.any():
-                            continue
-
-                        y_indices, x_indices = np.where(mask)
-                        if len(y_indices) == 0 or len(x_indices) == 0:
-                            continue
-
-                        y_min, y_max = np.min(y_indices), np.max(y_indices)
-                        x_min, x_max = np.min(x_indices), np.max(x_indices)
-
-                        mask_height = y_max - y_min + 1
-                        mask_width = x_max - x_min + 1
-
-                        resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
-
-                        current_mask = mask[y_min:y_max+1, x_min:x_max+1]
-
-                        overlay_color = resized_overlay[:, :, :3]
-                        overlay_alpha = resized_overlay[:, :, 3] / 255.0
-
-                        overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
-                        current_mask = np.expand_dims(current_mask, axis=2)
-
-                        region = result_frame[y_min:y_max+1, x_min:x_max+1]
-
-                        blended = region * (1 - (overlay_alpha * current_mask)) + \
-                                overlay_color * (overlay_alpha * current_mask)
-
-                        result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
-
-                result_frame = mask_annotator.annotate(result_frame, detections)
-
-                sink.write_frame(result_frame)
+                sink.write_frame(final_frame)
 
         return jsonify({
             "status": "success"
