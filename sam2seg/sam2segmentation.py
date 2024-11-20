@@ -26,8 +26,6 @@ sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
 model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-video_dir = "./frames/jojorun"
-
 @app.route("/predict", methods=["POST"])
 def predict():
     inference_state = predictor.init_state(video_path=video_dir)
@@ -119,9 +117,25 @@ def apply_masked_overlay(frame, masks, overlay_img):
 
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
-    inference_state = predictor.init_state(video_path=video_dir)
-    predictor.reset_state(inference_state)
     try:
+        vid_name = request.args.get("video_name")
+        if not vid_name:
+            raise ValueError("video_name parameter is required")
+        try:
+            dir_frames = vid_name.split(".")[0]
+            print("DIR FRAMES")
+            print(dir_frames)
+            print("VID NAME")
+            print(vid_name)
+            video_info = sv.VideoInfo.from_video_path("./vid/" + vid_name)
+        except AttributeError:
+            raise ValueError("Invalid video name format")
+        except FileNotFoundError:
+            raise ValueError(f"Video file not found: {vid_name}")
+
+        inference_state = predictor.init_state(video_path="./frames/" + dir_frames)
+        predictor.reset_state(inference_state)
+
         data = request.get_json()
         points = data.get("coordinates", [])
         labels = data.get("labels", [])
@@ -156,9 +170,8 @@ def predict_frames():
             opacity=mask_opacity
         )
 
-        video_info = sv.VideoInfo.from_video_path("./vid/jojorun.mp4")
         frames_paths = sorted(sv.list_files_with_extensions(
-            directory="./frames/jojorun",
+            directory="./frames/" + dir_frames,
             extensions=["jpg"]))
 
         overlay_img = None

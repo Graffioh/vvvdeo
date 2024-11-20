@@ -1,3 +1,5 @@
+import { VideoPlayer } from "./videoPlayer.js";
+
 const backendUrl = "http://localhost:8080";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -96,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
 
     formData.append("image", imageFile);
+    formData.append("video_name", videoName);
     formData.append(
       "data",
       JSON.stringify({
@@ -133,12 +136,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // video upload
+  let videoName = "";
   const videoInputUpload = document.getElementById("input-video");
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
+    videoName = videoFile.name;
+
     const formData = new FormData();
     formData.append("video", videoFile);
+    formData.append("video_name", videoName);
 
     try {
       const response = await fetch(backendUrl + "/uploadvideo", {
@@ -154,5 +161,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error:", error);
     }
+
+    const videoPlayer = new VideoPlayer();
+    await videoPlayer.loadManifest("http://localhost:8080/zawarudo/.mp4");
+    videoPlayer.setVideoPlayerVisible();
   });
 });

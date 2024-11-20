@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
     <script src="shaka-player/dist/shaka-player.compiled.js"></script>
-    <script type="module" src="videoConversion.js" defer></script>
     <script type="module" src="segmentation.js" defer></script>
 </head>
 <body>
@@ -28,19 +27,13 @@
         <button id="seg-add">segment add</button>
         <button id="seg-excl">segment exclude</button>
         <div id="video-btn-div">
-            <div id="btns-div">
-                <button id="mp4-btn">MP4</button>
-                <button disabled id="hls-btn">HLS</button>
-                <button disabled id="dash-btn">DASH</button>
-            </div>
-            <p hidden id="loading-msg">Converting the video...</p>
              <div class="video-container">
                 <video hidden id="shaka-player-video" controls width="1080">
                 </video>
                 <div id="shapes-container"></div>
             </div>
         </div>
-        <button id="inference-frame-btn">Run inference (FRAME)</button>
+        <button id="inference-frame-btn" disabled>Run inference (FRAME)</button>
         <button id="inference-video-btn">Run inference (VIDEO)</button>
         <h3>Pick an image for the mask overlay</h3>
         <div class="images-grid">
