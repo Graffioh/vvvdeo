@@ -22,11 +22,11 @@ clear_directory("./static/")
 app = Flask(__name__)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_tiny.pt"
-model_cfg = "./configs/sam2.1/sam2.1_hiera_t.yaml"
+sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
+model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-video_dir = "./frames"
+video_dir = "./frames/jojorun"
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -156,9 +156,9 @@ def predict_frames():
             opacity=mask_opacity
         )
 
-        video_info = sv.VideoInfo.from_video_path("./jojorun.mp4")
+        video_info = sv.VideoInfo.from_video_path("./vid/jojorun.mp4")
         frames_paths = sorted(sv.list_files_with_extensions(
-            directory="./frames/",
+            directory="./frames/jojorun",
             extensions=["jpg"]))
 
         overlay_img = None

@@ -131,4 +131,28 @@ document.addEventListener("DOMContentLoaded", () => {
       reader.readAsDataURL(file);
     }
   });
+
+  // video upload
+  const videoInputUpload = document.getElementById("input-video");
+  videoInputUpload.addEventListener("change", async (event) => {
+    event.preventDefault();
+    const videoFile = videoInputUpload.files[0];
+    const formData = new FormData();
+    formData.append("video", videoFile);
+
+    try {
+      const response = await fetch(backendUrl + "/uploadvideo", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("Video uploaded successfully");
+      } else {
+        alert("Video upload failed");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
 });

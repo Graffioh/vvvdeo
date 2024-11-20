@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"veedeo/util"
@@ -105,7 +106,7 @@ func min(a int64, b int64) int64 {
 }
 
 func handleMP4video(w http.ResponseWriter, r *http.Request) {
-	videoPath := "./jojorun.mp4"
+	videoPath := "../sam2seg/vid/jojorun.mp4"
 	videoData, err := os.Open(videoPath)
 	if err != nil {
 		log.Printf("Error opening video file: %v", err)
@@ -212,4 +213,29 @@ func handleDASHvideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Invalid DASH request", http.StatusBadRequest)
+}
+
+func UploadVideoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("video")
+	vidPath := filepath.Join("../sam2seg/vid", fileHeader.Filename)
+	dst, err := os.Create(vidPath)
+	if err != nil {
+		http.Error(w, "Error creating file", http.StatusInternalServerError)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, "Error saving file in img dir", http.StatusInternalServerError)
+	}
 }

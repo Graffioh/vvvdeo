@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>v</title>
+    <title>vvvdeo</title>
 
     <link rel="stylesheet" href="style.css"></style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,10 +17,14 @@
 </head>
 <body>
     <header>
-        <h1>v</h1>
+        <h1>vvvdeo</h1>
     </header>
     <main>
-        <p>ZA WARUDO!</p>
+        <h3>Pick a video</h3>
+        <form enctype="multipart/form-data">
+            <input id="input-video" type="file" name="video" accept="video/mp4">
+        </form>
+        <img id="preview" class="preview">
         <button id="seg-add">segment add</button>
         <button id="seg-excl">segment exclude</button>
         <div id="video-btn-div">
@@ -38,6 +42,7 @@
         </div>
         <button id="inference-frame-btn">Run inference (FRAME)</button>
         <button id="inference-video-btn">Run inference (VIDEO)</button>
+        <h3>Pick an image for the mask overlay</h3>
         <div class="images-grid">
             <form enctype="multipart/form-data">
                 <input id="input-img" type="file" name="image" accept="image/*">
