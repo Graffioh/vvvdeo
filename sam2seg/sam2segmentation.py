@@ -263,12 +263,34 @@ def predict_frames():
         input_video = "./static/video_result.mp4"
         output_video = "./static/output_compatible.mp4"
 
-        command = [
-            "ffmpeg", "-i", input_video,
-            "-vcodec", "libx264", "-acodec", "aac",
-            "-strict", "-2", "-movflags", "+faststart",
-            "-crf", "23", output_video
-        ]
+        # Extract audio from original video
+        audio_file = "./static/temp_audio.aac"
+        audio_extracted = False
+        try:
+            audio_command = [
+                "ffmpeg", "-i", f"./vid/{vid_name}",
+                "-vn", "-acodec", "aac", "-y", audio_file
+            ]
+            subprocess.run(audio_command, check=True)
+            audio_extracted = True
+        except subprocess.CalledProcessError as e:
+            print(f"Audio extraction failed: {e}")
+
+        # Re-encode video with or without audio
+        if audio_extracted:
+            command = [
+                "ffmpeg", "-i", input_video, "-i", audio_file,
+                "-vcodec", "libx264", "-acodec", "aac",
+                "-strict", "-2", "-movflags", "+faststart",
+                "-crf", "23", "-shortest", output_video
+            ]
+        else:
+            command = [
+                "ffmpeg", "-i", input_video,
+                "-vcodec", "libx264", "-acodec", "aac",
+                "-strict", "-2", "-movflags", "+faststart",
+                "-crf", "23", output_video
+            ]
 
         try:
             subprocess.run(command, check=True)
