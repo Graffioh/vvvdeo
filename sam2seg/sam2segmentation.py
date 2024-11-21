@@ -27,6 +27,7 @@ sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
 model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
+'''
 @app.route("/predict", methods=["POST"])
 def predict():
     inference_state = predictor.init_state(video_path=video_dir)
@@ -79,6 +80,7 @@ def predict():
 
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
+'''
 
 def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
     if logo_img is None:
@@ -146,6 +148,26 @@ def apply_masked_overlay(frame, masks, overlay_img):
 
     return result_frame
 
+def load_and_prepare_image(image_path, required_format="RGBA"):
+    if not os.path.exists(image_path):
+        raise ValueError(f"Image file not found: {image_path}")
+
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    if image is None:
+        raise ValueError(f"Failed to load image: {image_path}")
+
+    if len(image.shape) == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+    if required_format == "RGBA":
+        if len(image.shape) == 3 and image.shape[2] == 3:
+            alpha_channel = np.ones(image.shape[:2], dtype=image.dtype) * 255
+            image = cv2.merge([image, alpha_channel])
+        elif len(image.shape) != 3 or image.shape[2] != 4:
+            raise ValueError(f"Image must be in RGB or RGBA format. Current shape: {image.shape}")
+
+    return image
+
 input_video = "./static/video_result.mp4"
 output_video = "./static/output_compatible.mp4"
 
@@ -206,32 +228,12 @@ def predict_frames():
 
         overlay_img = None
         if overlay_img_name is not None:
-            overlay_img = cv2.imread("./img/" + overlay_img_name, cv2.IMREAD_UNCHANGED)
+            overlay_img = load_and_prepare_image(f"./img/{overlay_img_name}")
 
-        if overlay_img is not None:
-            if len(overlay_img.shape) == 2:
-                overlay_img = cv2.cvtColor(overlay_img, cv2.COLOR_GRAY2RGB)
-
-            if len(overlay_img.shape) == 3 and overlay_img.shape[2] == 3:
-                alpha_channel = np.ones(overlay_img.shape[:2], dtype=overlay_img.dtype) * 255
-                overlay_img = cv2.merge([overlay_img, alpha_channel])
-            elif len(overlay_img.shape) != 3 or overlay_img.shape[2] != 4:
-                raise ValueError("Overlay image must be in RGB or RGBA format")
-
-        logo_img_name = "vvvdeo-logo.png"
         logo_img = None
+        logo_img_name = "vvvdeo-logo.png"
         if logo_img_name:
-            logo_img = cv2.imread(f"./{logo_img_name}", cv2.IMREAD_UNCHANGED)
-            if logo_img is None:
-                raise ValueError(f"Logo file not found: {logo_img_name}")
-            if len(logo_img.shape) == 2:
-                alpha_channel = np.ones(logo_img.shape, dtype=logo_img.dtype) * 255
-                logo_img = cv2.merge([logo_img, logo_img, logo_img, alpha_channel])
-            elif len(logo_img.shape) == 3 and logo_img.shape[2] == 3:
-                alpha_channel = np.ones(logo_img.shape[:2], dtype=logo_img.dtype) * 255
-                logo_img = cv2.merge([logo_img, alpha_channel])
-            elif len(logo_img.shape) != 3 or logo_img.shape[2] != 4:
-                raise ValueError("Logo image must be in RGB or RGBA format")
+            logo_img = load_and_prepare_image(f"./{logo_img_name}")
 
         with sv.VideoSink("./static/video_result.mp4", video_info=video_info) as sink:
             for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
@@ -263,7 +265,6 @@ def predict_frames():
         input_video = "./static/video_result.mp4"
         output_video = "./static/output_compatible.mp4"
 
-        # Extract audio from original video
         audio_file = "./static/temp_audio.aac"
         audio_extracted = False
         try:
@@ -276,7 +277,6 @@ def predict_frames():
         except subprocess.CalledProcessError as e:
             print(f"Audio extraction failed: {e}")
 
-        # Re-encode video with or without audio
         if audio_extracted:
             command = [
                 "ffmpeg", "-i", input_video, "-i", audio_file,
