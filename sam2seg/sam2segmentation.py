@@ -80,6 +80,36 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500
 
+def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
+    if logo_img is None:
+        return frame
+
+    frame_h, frame_w = frame.shape[:2]
+    logo_h, logo_w = logo_img.shape[:2]
+
+    if position == 'top-right':
+        x = frame_w - logo_w - padding
+        y = padding
+    elif position == 'top-left':
+        x = padding
+        y = padding
+    elif position == 'bottom-right':
+        x = frame_w - logo_w - padding
+        y = frame_h - logo_h - padding
+    elif position == 'bottom-left':
+        x = padding
+        y = frame_h - logo_h - padding
+    else:
+        raise ValueError("Unsupported position. Use 'top-right', 'top-left', 'bottom-right', or 'bottom-left'.")
+
+    roi = frame[y:y+logo_h, x:x+logo_w]
+    logo_alpha = logo_img[:, :, 3] / 255.0
+    for c in range(3):
+        roi[:, :, c] = (1 - logo_alpha) * roi[:, :, c] + logo_alpha * logo_img[:, :, c]
+
+    frame[y:y+logo_h, x:x+logo_w] = roi
+    return frame
+
 def apply_masked_overlay(frame, masks, overlay_img):
     result_frame = frame.copy()
 
@@ -127,10 +157,6 @@ def predict_frames():
             raise ValueError("video_name parameter is required")
         try:
             dir_frames = vid_name.split(".")[0]
-            print("DIR FRAMES")
-            print(dir_frames)
-            print("VID NAME")
-            print(vid_name)
             video_info = sv.VideoInfo.from_video_path("./vid/" + vid_name)
         except AttributeError:
             raise ValueError("Invalid video name format")
@@ -192,6 +218,21 @@ def predict_frames():
             elif len(overlay_img.shape) != 3 or overlay_img.shape[2] != 4:
                 raise ValueError("Overlay image must be in RGB or RGBA format")
 
+        logo_img_name = "vvvdeo-logo.png"
+        logo_img = None
+        if logo_img_name:
+            logo_img = cv2.imread(f"./{logo_img_name}", cv2.IMREAD_UNCHANGED)
+            if logo_img is None:
+                raise ValueError(f"Logo file not found: {logo_img_name}")
+            if len(logo_img.shape) == 2:
+                alpha_channel = np.ones(logo_img.shape, dtype=logo_img.dtype) * 255
+                logo_img = cv2.merge([logo_img, logo_img, logo_img, alpha_channel])
+            elif len(logo_img.shape) == 3 and logo_img.shape[2] == 3:
+                alpha_channel = np.ones(logo_img.shape[:2], dtype=logo_img.dtype) * 255
+                logo_img = cv2.merge([logo_img, alpha_channel])
+            elif len(logo_img.shape) != 3 or logo_img.shape[2] != 4:
+                raise ValueError("Logo image must be in RGB or RGBA format")
+
         with sv.VideoSink("./static/video_result.mp4", video_info=video_info) as sink:
             for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
                 if not os.path.exists(frames_paths[frame_idx]):
@@ -215,6 +256,7 @@ def predict_frames():
 
                 result_frame = apply_masked_overlay(frame, masks, overlay_img)
                 final_frame = mask_annotator.annotate(result_frame, detections)
+                final_frame_with_logo = add_logo_to_frame(final_frame, logo_img, position='top-right')
 
                 sink.write_frame(final_frame)
 
