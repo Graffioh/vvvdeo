@@ -8,6 +8,7 @@ from PIL import Image, ImageOps, ImageFilter
 import time
 import cv2
 import supervision as sv
+import subprocess
 
 def clear_directory(directory_path):
     for filename in os.listdir(directory_path):
@@ -115,6 +116,9 @@ def apply_masked_overlay(frame, masks, overlay_img):
 
     return result_frame
 
+input_video = "./static/video_result.mp4"
+output_video = "./static/output_compatible.mp4"
+
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
     try:
@@ -213,6 +217,22 @@ def predict_frames():
                 final_frame = mask_annotator.annotate(result_frame, detections)
 
                 sink.write_frame(final_frame)
+
+        input_video = "./static/video_result.mp4"
+        output_video = "./static/output_compatible.mp4"
+
+        command = [
+            "ffmpeg", "-i", input_video,
+            "-vcodec", "libx264", "-acodec", "aac",
+            "-strict", "-2", "-movflags", "+faststart",
+            "-crf", "23", output_video
+        ]
+
+        try:
+            subprocess.run(command, check=True)
+            print(f"Re-encoded video saved as: {output_video}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error during re-encoding: {e}")
 
         return jsonify({
             "status": "success"

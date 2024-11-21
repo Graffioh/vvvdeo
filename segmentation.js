@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  /*
   const inferenceFrameButtonElement = document.getElementById(
     "inference-frame-btn",
   );
@@ -86,6 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => console.error("Error:", error));
   });
+  */
 
   const inferenceVideoButtonElement = document.getElementById(
     "inference-video-btn",
