@@ -52,7 +52,6 @@ func getLastUploadedVideo(w http.ResponseWriter) string {
 }
 
 func handleMP4video(w http.ResponseWriter, r *http.Request) {
-	//videoPath := "../sam2seg/vid/jojorun.mp4"
 	videoPath := getLastUploadedVideo(w)
 	fmt.Println(videoPath)
 	videoData, err := os.Open(videoPath)

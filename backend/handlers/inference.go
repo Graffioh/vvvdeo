@@ -21,6 +21,7 @@ type Points struct {
 	Labels      []int32            `json:"labels"`
 }
 
+/*
 func InferenceFrameHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
@@ -64,6 +65,7 @@ func InferenceFrameHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
+*/
 
 func uploadImage(w http.ResponseWriter, file multipart.File, fileHeader *multipart.FileHeader) {
 	imgPath := filepath.Join("../sam2seg/img", fileHeader.Filename)
@@ -126,13 +128,26 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		http.Error(w, "Error decoding Python server response", http.StatusInternalServerError)
+	contentType := resp.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		// Handle error response
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			http.Error(w, "Error decoding Python server response", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	w.Header().Set("Content-Type", "video/mp4")
+	w.Header().Set("Content-Disposition", "attachment; filename=processed_video.mp4")
+
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		http.Error(w, "Error streaming video file", http.StatusInternalServerError)
+		return
+	}
 }

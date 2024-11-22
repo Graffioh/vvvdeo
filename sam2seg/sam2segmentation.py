@@ -298,8 +298,19 @@ def predict_frames():
         except subprocess.CalledProcessError as e:
             print(f"Error during re-encoding: {e}")
 
+        # send the video to the frontend
+        try:
+            return send_file(
+                output_video,
+                mimetype='video/mp4',
+                as_attachment=True,
+                download_name='processed_video.mp4'
+            )
+        except Exception as e:
+            return jsonify({"error": f"Error sending file: {str(e)}"}), 500
+
         return jsonify({
-            "status": "success"
+            "status": "success (no video sent)"
         })
     except Exception as e:
         return jsonify({"error": str(e), "status": "error"}), 500

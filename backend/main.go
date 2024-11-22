@@ -27,7 +27,7 @@ func main() {
 
 	mux.HandleFunc("/uploadvideo", handlers.UploadVideoHandler)
 	mux.HandleFunc("/zawarudo/*", handlers.VideoHandler)
-	mux.HandleFunc("/inference-frame", handlers.InferenceFrameHandler)
+	//mux.HandleFunc("/inference-frame", handlers.InferenceFrameHandler)
 	mux.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 

@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const spinner = document.getElementById("loading-spinner");
   const loadingText = document.getElementById("loading-text");
 
-  inferenceVideoButtonElement.addEventListener("click", () => {
+  inferenceVideoButtonElement.addEventListener("click", async () => {
     const imageFile = fileInput.files[0];
     const formData = new FormData();
 
@@ -163,22 +163,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
     spinner.style.display = "block";
     loadingText.style.display = "block";
+    inferenceVideoButtonElement.hidden = true;
 
-    fetch(backendUrl + "/inference-video", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("result:", data);
-        spinner.style.display = "none";
-        loadingText.style.display = "none";
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        spinner.style.display = "none";
-        loadingText.style.display = "none";
+    try {
+      const response = await fetch(backendUrl + "/inference-video", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "video/mp4",
+        },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`,
+        );
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "processed_video.mp4";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+
+      inferenceVideoButtonElement.hidden = false;
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      spinner.style.display = "none";
+      loadingText.style.display = "none";
+    }
   });
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 });
