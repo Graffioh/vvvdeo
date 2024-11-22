@@ -33,7 +33,7 @@ main {
 }
 
 button {
-    background-color: #7f8c8d;
+    background-color: #000000;
     color: white;
     border: none;
     padding: 8px 12px;
@@ -110,5 +110,16 @@ video {
 }
 
 #input-video {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+#input-img {
+    margin-bottom: 10px;
+}
+
+#inference-video-btn {
+    width: 200px;
+    height: 100px;
+    font-weight: bold;
+    font-size: 20px;
 }

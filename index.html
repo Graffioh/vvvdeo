@@ -23,6 +23,14 @@
         <form enctype="multipart/form-data">
             <input id="input-video" type="file" name="video" accept="video/mp4">
         </form>
+        <h3>Pick an image for the mask overlay</h3>
+        <div class="images-grid">
+            <form enctype="multipart/form-data">
+                <input id="input-img" type="file" name="image" accept="image/*">
+                <br></br>
+            </form>
+            <img id="preview" class="preview">
+        </div>
         <button id="seg-add">segment add</button>
         <button id="seg-excl">segment exclude</button>
         <div id="video-btn-div">
@@ -32,17 +40,9 @@
                 <div id="shapes-container"></div>
             </div>
         </div>
+        <button id="inference-video-btn">RUN INFERENCE</button>
         <!--<button id="inference-frame-btn" disabled>Run inference (FRAME)</button>-->
-        <button id="inference-video-btn">Run inference (VIDEO)</button>
-        <h3>Pick an image for the mask overlay</h3>
-        <div class="images-grid">
-            <form enctype="multipart/form-data">
-                <input id="input-img" type="file" name="image" accept="image/*">
-                <br></br>
-            </form>
-            <img id="preview" class="preview">
-        </div>
-        <img id="segmented-frame" src="" alt="Segmented Frame" style="display:none; max-width:100%;" />
+        <!--<img id="segmented-frame" src="" alt="Segmented Frame" style="display:none; max-width:100%;" />-->
     </main>
 </body>
 </html>
