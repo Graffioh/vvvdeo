@@ -89,37 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   */
 
-  const inferenceVideoButtonElement = document.getElementById(
-    "inference-video-btn",
-  );
-
   const fileInput = document.getElementById("input-img");
-
-  inferenceVideoButtonElement.addEventListener("click", () => {
-    const imageFile = fileInput.files[0];
-    const formData = new FormData();
-
-    formData.append("image", imageFile);
-    formData.append("video_name", videoName);
-    formData.append(
-      "data",
-      JSON.stringify({
-        coordinates: coordinates,
-        labels: labels,
-      }),
-    );
-
-    fetch(backendUrl + "/inference-video", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("result:", data);
-      })
-      .catch((error) => console.error("Error:", error));
-  });
-  // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
   // image preview
   fileInput.addEventListener("change", (event) => {
@@ -168,4 +138,47 @@ document.addEventListener("DOMContentLoaded", () => {
     await videoPlayer.loadManifest("http://localhost:8080/zawarudo/.mp4");
     videoPlayer.setVideoPlayerVisible();
   });
+
+  // inference
+  const inferenceVideoButtonElement = document.getElementById(
+    "inference-video-btn",
+  );
+
+  const spinner = document.getElementById("loading-spinner");
+  const loadingText = document.getElementById("loading-text");
+
+  inferenceVideoButtonElement.addEventListener("click", () => {
+    const imageFile = fileInput.files[0];
+    const formData = new FormData();
+
+    formData.append("image", imageFile);
+    formData.append("video_name", videoName);
+    formData.append(
+      "data",
+      JSON.stringify({
+        coordinates: coordinates,
+        labels: labels,
+      }),
+    );
+
+    spinner.style.display = "block";
+    loadingText.style.display = "block";
+
+    fetch(backendUrl + "/inference-video", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("result:", data);
+        spinner.style.display = "none";
+        loadingText.style.display = "none";
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        spinner.style.display = "none";
+        loadingText.style.display = "none";
+      });
+  });
+  // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 });

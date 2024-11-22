@@ -123,3 +123,37 @@ video {
     font-weight: bold;
     font-size: 20px;
 }
+
+.spinner {
+    display: none;
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 5px solid #000000;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner-text {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    margin-top: 10px;
+    display: none;
+}
+
+#inf-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

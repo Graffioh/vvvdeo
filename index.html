@@ -40,9 +40,13 @@
                 <div id="shapes-container"></div>
             </div>
         </div>
-        <button id="inference-video-btn">RUN INFERENCE</button>
+        <div id="inf-btn-container">
+            <button id="inference-video-btn">RUN INFERENCE</button>
+        </div>
         <!--<button id="inference-frame-btn" disabled>Run inference (FRAME)</button>-->
         <!--<img id="segmented-frame" src="" alt="Segmented Frame" style="display:none; max-width:100%;" />-->
+        <div class="spinner" id="loading-spinner"></div>
+        <div class="spinner-text" id="loading-text">Processing video...</div>
     </main>
 </body>
 </html>
