@@ -115,6 +115,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const videoFile = videoInputUpload.files[0];
     videoName = videoFile.name;
 
+    // R2 bucket upload
+    const url = "http://localhost:8080/presigned-put-url";
+    const response = await fetch(url, { method: "POST" });
+
+    const { presignedUrl: uploadUrl } = await response.json();
+
+    await fetch(uploadUrl, {
+      method: "PUT",
+      body: videoFile,
+    });
+
+    /*
+
     const formData = new FormData();
     formData.append("video", videoFile);
     formData.append("video_name", videoName);
@@ -137,6 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const videoPlayer = new VideoPlayer();
     await videoPlayer.loadManifest("http://localhost:8080/zawarudo/.mp4");
     videoPlayer.setVideoPlayerVisible();
+    */
   });
 
   // inference

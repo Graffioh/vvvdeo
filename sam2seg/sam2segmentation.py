@@ -27,61 +27,6 @@ sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
 model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-'''
-@app.route("/predict", methods=["POST"])
-def predict():
-    inference_state = predictor.init_state(video_path=video_dir)
-    predictor.reset_state(inference_state)
-
-    try:
-        data = request.get_json()
-        points = data.get("coordinates", [])
-        labels = data.get("labels", [])
-
-        if not points:
-            return jsonify({"error": "Missing coordinates"}), 400
-
-        try:
-            points = np.array([[p['x'], p['y']] for p in points], dtype=np.float32)
-            labels = np.array([l for l in labels], dtype=np.int32)
-        except Exception as e:
-            return jsonify({"error": f"Error processing points: {str(e)}"}), 500
-
-        ann_frame_idx = 0
-        ann_obj_id = 1
-
-        _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(
-            inference_state=inference_state,
-            frame_idx=ann_frame_idx,
-            obj_id=ann_obj_id,
-            points=points,
-            labels=labels,
-        )
-
-        mask_data = (out_mask_logits[0] > 0.0).cpu().numpy()
-        color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
-        h, w = mask_data.shape[-2:]
-        mask_image = mask_data.reshape(h, w, 1) * color.reshape(1, 1, -1)
-        mask_image_rgb = (mask_image[..., :3] * 255).astype(np.uint8)
-        segmented_image = Image.fromarray(mask_image_rgb, 'RGB')
-
-        output_dir = "./static"
-        os.makedirs(output_dir, exist_ok=True)
-        timestamp = str(time.time_ns())
-        segmented_image_path = os.path.join(output_dir, f"segmented_frame_{timestamp}.png")
-        segmented_image.save(segmented_image_path)
-
-        return jsonify({
-            "frame_idx": ann_frame_idx,
-            "obj_id": int(out_obj_ids[0]),
-            "status": "success",
-            "segmented_image_path": segmented_image_path
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e), "status": "error"}), 500
-'''
-
 def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
     if logo_img is None:
         return frame
