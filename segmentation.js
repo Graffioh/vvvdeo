@@ -1,5 +1,3 @@
-import { VideoPlayer } from "./videoPlayer.js";
-
 const backendUrl = "http://localhost:8080";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -77,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   */
 
+  // add points on the video for segmentation inference
   videoPlayer.addEventListener("click", (event) => {
     if (!isVideoPlayable) {
       event.preventDefault();
@@ -106,7 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // video upload
+  // VIDEO UPLOAD
+  //
   let videoName = "";
   const videoInputUpload = document.getElementById("input-video");
   videoInputUpload.addEventListener("change", async (event) => {
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const videoFile = videoInputUpload.files[0];
     videoName = videoFile.name;
 
-    // R2 bucket upload
+    // upload video to r2 bucket with presigned url
     const presignedPutUrl = "http://localhost:8080/presigned-put-url";
     const presignedPutResponse = await fetch(presignedPutUrl, {
       method: "POST",
@@ -128,7 +128,25 @@ document.addEventListener("DOMContentLoaded", () => {
       body: videoFile,
     });
 
-    /*
+    const presignedGetUrl =
+      "http://localhost:8080/presigned-get-url?key=" + videoKey;
+
+    try {
+      const presignedGetResponse = await fetch(presignedGetUrl, {
+        method: "POST",
+      });
+
+      const { presignedUrl: getUrl } = await presignedGetResponse.json();
+
+      // show video in the video player
+      videoPlayer.src = getUrl;
+      videoPlayer.style.display = "block";
+    } catch (error) {
+      console.error("Error getting presigned URL for GET: ", error);
+    }
+  });
+
+  /*
 
     const formData = new FormData();
     formData.append("video", videoFile);
@@ -150,19 +168,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     */
 
-    const presignedGetUrl =
-      "http://localhost:8080/presigned-get-url?key=" + videoKey;
-    const presignedGetResponse = await fetch(presignedGetUrl, {
-      method: "POST",
-    });
-
-    const { presignedUrl: getUrl } = await presignedGetResponse.json();
-
-    videoPlayer.src = getUrl;
-    videoPlayer.style.display = "block";
-  });
-
-  // inference
+  // INFERENCE
+  //
   const inferenceVideoButtonElement = document.getElementById(
     "inference-video-btn",
   );
