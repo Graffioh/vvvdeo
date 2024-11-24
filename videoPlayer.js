@@ -20,7 +20,7 @@ class VideoPlayer {
 
   async initPlayer() {
     // Create a Player instance.
-    const video = document.getElementById("shaka-player-video");
+    //const video = document.getElementById("shaka-player-video");
     this.player = new shaka.Player();
     await this.player.attach(video);
 
@@ -56,7 +56,7 @@ class VideoPlayer {
 
   setVideoPlayerVisible() {
     // Set video visibility in the frontend
-    const video = document.getElementById("shaka-player-video");
+    //const video = document.getElementById("shaka-player-video");
     video.hidden = false;
   }
 }

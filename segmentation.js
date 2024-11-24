@@ -5,8 +5,7 @@ const backendUrl = "http://localhost:8080";
 document.addEventListener("DOMContentLoaded", () => {
   // VIDEO SEGMENTATION
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-  const videoElement = document.getElementById("shaka-player-video");
+  const videoPlayer = document.getElementById("video-player");
   const coordinates = [];
   const labels = [];
   const shapesContainer = document.getElementById("shapes-container");
@@ -17,9 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let isPositiveLabel = true;
 
   function addPoint(event, shapeType, label) {
-    const videoRect = videoElement.getBoundingClientRect();
-    const scaleX = videoElement.videoWidth / videoElement.offsetWidth;
-    const scaleY = videoElement.videoHeight / videoElement.offsetHeight;
+    const videoRect = videoPlayer.getBoundingClientRect();
+    const scaleX = videoPlayer.videoWidth / videoPlayer.offsetWidth;
+    const scaleY = videoPlayer.videoHeight / videoPlayer.offsetHeight;
 
     const x = event.clientX - videoRect.left;
     const y = event.clientY - videoRect.top;
@@ -53,17 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     addNegativeLabelButton.style.color = "black";
   });
 
-  videoElement.addEventListener("click", (event) => {
-    if (!isVideoPlayable) {
-      event.preventDefault();
-      if (isPositiveLabel) {
-        addPoint(event, "circle", 1);
-      } else {
-        addPoint(event, "square", 0);
-      }
-    }
-  });
-
   /*
   const inferenceFrameButtonElement = document.getElementById(
     "inference-frame-btn",
@@ -88,6 +76,17 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch((error) => console.error("Error:", error));
   });
   */
+
+  videoPlayer.addEventListener("click", (event) => {
+    if (!isVideoPlayable) {
+      event.preventDefault();
+      if (isPositiveLabel) {
+        addPoint(event, "circle", 1);
+      } else {
+        addPoint(event, "square", 0);
+      }
+    }
+  });
 
   const fileInput = document.getElementById("input-img");
 
@@ -116,10 +115,13 @@ document.addEventListener("DOMContentLoaded", () => {
     videoName = videoFile.name;
 
     // R2 bucket upload
-    const url = "http://localhost:8080/presigned-put-url";
-    const response = await fetch(url, { method: "POST" });
+    const presignedPutUrl = "http://localhost:8080/presigned-put-url";
+    const presignedPutResponse = await fetch(presignedPutUrl, {
+      method: "POST",
+    });
 
-    const { presignedUrl: uploadUrl } = await response.json();
+    const { presignedUrl: uploadUrl, key: videoKey } =
+      await presignedPutResponse.json();
 
     await fetch(uploadUrl, {
       method: "PUT",
@@ -146,11 +148,18 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error:", error);
     }
-
-    const videoPlayer = new VideoPlayer();
-    await videoPlayer.loadManifest("http://localhost:8080/zawarudo/.mp4");
-    videoPlayer.setVideoPlayerVisible();
     */
+
+    const presignedGetUrl =
+      "http://localhost:8080/presigned-get-url?key=" + videoKey;
+    const presignedGetResponse = await fetch(presignedGetUrl, {
+      method: "POST",
+    });
+
+    const { presignedUrl: getUrl } = await presignedGetResponse.json();
+
+    videoPlayer.src = getUrl;
+    videoPlayer.style.display = "block";
   });
 
   // inference

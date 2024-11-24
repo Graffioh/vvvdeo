@@ -157,3 +157,7 @@ video {
     justify-content: center;
     align-items: center;
 }
+
+#video-player {
+    display: none;
+}
