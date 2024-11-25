@@ -13,3 +13,6 @@ sam2seg/vid
 .ropeproject/
 
 backend/.env
+backend/tmp
+
+todo.md

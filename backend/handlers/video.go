@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"veedeo/util"
+	"veedeo/storage"
 )
 
 func min(a int64, b int64) int64 {
@@ -140,6 +141,31 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
+	type Notification struct {
+		VideoKey string `json:"videoKey"`
+	}
+	var notification Notification
+	err := json.NewDecoder(r.Body).Decode(&notification)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	var bucketName = os.Getenv("R2_BUCKET")
+
+	go func() {
+		err := storage.ProcessVideo(bucketName, notification.VideoKey)
+		if err != nil {
+			fmt.Fprintf(w, "Error processing the video! %v", err)
+			return
+		}
+	}()
+
+	fmt.Fprint(w, "Video notification sent", http.StatusOK)
+}
+
+/*
 func UploadVideoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
@@ -167,4 +193,4 @@ func UploadVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.ConvertIntoFrames(videoName)
-}
+}*/

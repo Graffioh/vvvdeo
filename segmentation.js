@@ -138,11 +138,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { presignedUrl: getUrl } = await presignedGetResponse.json();
 
+      // notify the backend that the video is uploaded to start ffmpeg work
+      const videoNotificationResponse = await fetch(
+        backendUrl + "/video-upload-complete",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ videoKey }),
+        },
+      );
+
+      if (!videoNotificationResponse.ok) {
+        throw new Error("Video notification response error!");
+      }
+
       // show video in the video player
       videoPlayer.src = getUrl;
       videoPlayer.style.display = "block";
     } catch (error) {
-      console.error("Error getting presigned URL for GET: ", error);
+      console.error("Error uploading the video: ", error);
     }
   });
 

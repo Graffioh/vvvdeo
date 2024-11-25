@@ -4,12 +4,19 @@ import (
 	"log"
 	"net/http"
 	"veedeo/handlers"
+	"veedeo/storage"
 
+	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file!")
+	}
+
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost:8082", "http://localhost:9000", "http://127.0.0.1:8082"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -25,11 +32,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/uploadvideo", handlers.UploadVideoHandler)
+	//mux.HandleFunc("/uploadvideo", handlers.UploadVideoHandler)
 	mux.HandleFunc("/zawarudo/*", handlers.VideoHandler)
 	mux.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
-	mux.HandleFunc("/presigned-put-url", handlers.PresignedPutURLHandler)
-	mux.HandleFunc("/presigned-get-url", handlers.PresignedGetURLHandler)
+	mux.HandleFunc("/presigned-put-url", storage.PresignedPutURLHandler)
+	mux.HandleFunc("/presigned-get-url", storage.PresignedGetURLHandler)
+	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
 	handler := c.Handler(mux)

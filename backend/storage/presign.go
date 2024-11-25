@@ -1,19 +1,15 @@
-package handlers
+package storage
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 )
 
 type PresignedURLResponse struct {
@@ -27,28 +23,11 @@ func PresignedPutURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file!")
-	}
-	var accountId = os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	var bucketName = os.Getenv("R2_BUCKET")
-	var accessKeyId = os.Getenv("R2_ACCESS_KEY")
-	var accessKeySecret = os.Getenv("R2_SECRET_ACCESS_KEY")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
-		config.WithRegion("auto"),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
-	})
-
+	client := GetS3Client()
 	presignClient := s3.NewPresignClient(client)
+
 	uuid := uuid.New()
 	key := fmt.Sprintf("videos/%s", "video-"+uuid.String())
 
@@ -76,27 +55,9 @@ func PresignedGetURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file!")
-	}
-	var accountId = os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	var bucketName = os.Getenv("R2_BUCKET")
-	var accessKeyId = os.Getenv("R2_ACCESS_KEY")
-	var accessKeySecret = os.Getenv("R2_SECRET_ACCESS_KEY")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
-		config.WithRegion("auto"),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId))
-	})
-
+	client := GetS3Client()
 	presignClient := s3.NewPresignClient(client)
 
 	key := r.URL.Query().Get("key")
