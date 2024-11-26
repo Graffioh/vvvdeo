@@ -115,6 +115,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoInputUpload = document.getElementById("input-video");
   let ws;
 
+  let wsKey = localStorage.getItem("videoKey");
+
+  console.log(wsKey);
+
+  if (wsKey) {
+    const func = async () => {
+      await connectWebSocket(wsKey);
+    };
+
+    func();
+  }
+
   async function connectWebSocket(videoKey) {
     return new Promise((resolve, reject) => {
       ws = new WebSocket("ws://localhost:8080/ws");
@@ -136,6 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (message.status === "completed") {
           await fetchPresignedGetUrlAndDisplayVideo(message.videoKey);
+          localStorage.removeItem("videoKey");
         }
       };
     });
@@ -181,6 +194,8 @@ document.addEventListener("DOMContentLoaded", () => {
       method: "PUT",
       body: videoFile,
     });
+
+    localStorage.setItem("videoKey", videoKey);
 
     await connectWebSocket(videoKey);
   });
