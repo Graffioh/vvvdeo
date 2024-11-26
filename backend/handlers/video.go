@@ -141,11 +141,12 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type Notification struct {
+	VideoKey    string `json:"videoKey"`
+	VideoStatus string `json:"videoStatus"`
+}
+
 func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
-	type Notification struct {
-		VideoKey    string `json:"videoKey"`
-		VideoStatus string `json:"videoStatus"`
-	}
 	var notification Notification
 
 	bodyBytes, err := io.ReadAll(r.Body)
@@ -176,4 +177,38 @@ func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	fmt.Fprint(w, "Video notification sent", http.StatusOK)
+}
+
+func FrameExtractionNotificationHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Frame extraction\n")
+
+	type Message struct {
+		Message  string `json:"message"`
+		Status   string `json:"status"`
+		VideoKey string `json:"videoKey"`
+	}
+
+	fmt.Printf("JOBIDS: %v\n", jobids)
+
+	var notification Notification
+
+	err := json.NewDecoder(r.Body).Decode(&notification)
+
+	fmt.Printf("NOTIFICATION: %v", notification)
+
+	job_id := strings.Split(notification.VideoKey, "/")[1]
+	videoKey := "videos/" + job_id
+
+	ws_conn := jobids[job_id]
+
+	if err = ws_conn.WriteJSON(Message{
+		Message:  "frame extraction",
+		Status:   "completed",
+		VideoKey: videoKey,
+	}); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fmt.Fprint(w, "Frame extraction complete!", http.StatusOK)
 }

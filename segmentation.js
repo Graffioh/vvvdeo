@@ -105,10 +105,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  const inferenceVideoButtonElement = document.getElementById(
+    "inference-video-btn",
+  );
+
   // VIDEO UPLOAD
   //
   let videoName = "";
   const videoInputUpload = document.getElementById("input-video");
+  let ws;
+
+  async function connectWebSocket(videoKey) {
+    return new Promise((resolve, reject) => {
+      ws = new WebSocket("ws://localhost:8080/ws");
+
+      ws.onopen = () => {
+        console.log("WebSocket connection established");
+        ws.send(JSON.stringify({ videoKey: videoKey }));
+        resolve();
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        reject(error);
+      };
+
+      ws.onmessage = async (event) => {
+        const message = JSON.parse(event.data);
+        console.log("Received message from server:", message);
+
+        if (message.status === "completed") {
+          await fetchPresignedGetUrlAndDisplayVideo(message.videoKey);
+        }
+      };
+    });
+  }
+
+  async function fetchPresignedGetUrlAndDisplayVideo(videoKey) {
+    const presignedGetUrl =
+      "http://localhost:8080/presigned-get-url?key=" + videoKey;
+
+    try {
+      const presignedGetResponse = await fetch(presignedGetUrl, {
+        method: "POST",
+      });
+
+      const { presignedUrl: getUrl } = await presignedGetResponse.json();
+
+      // Show video in the video player
+      videoPlayer.src = getUrl;
+      videoPlayer.style.display = "block";
+
+      // Enable run inference button
+      inferenceVideoButtonElement.disabled = false;
+    } catch (error) {
+      console.error("Error fetching presigned GET URL:", error);
+    }
+  }
+
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
@@ -128,24 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: videoFile,
     });
 
-    const presignedGetUrl =
-      "http://localhost:8080/presigned-get-url?key=" + videoKey;
-
-    try {
-      const presignedGetResponse = await fetch(presignedGetUrl, {
-        method: "POST",
-      });
-
-      const { presignedUrl: getUrl } = await presignedGetResponse.json();
-
-      // enable inference button + show the video in the video player
-
-      // show video in the video player
-      videoPlayer.src = getUrl;
-      videoPlayer.style.display = "block";
-    } catch (error) {
-      console.error("Error uploading the video: ", error);
-    }
+    await connectWebSocket(videoKey);
   });
 
   /*
@@ -172,9 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // INFERENCE
   //
-  const inferenceVideoButtonElement = document.getElementById(
-    "inference-video-btn",
-  );
 
   const spinner = document.getElementById("loading-spinner");
   const loadingText = document.getElementById("loading-text");

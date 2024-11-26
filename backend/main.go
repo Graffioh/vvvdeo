@@ -37,6 +37,8 @@ func main() {
 	mux.HandleFunc("/presigned-put-url", storage.PresignedPutURLHandler)
 	mux.HandleFunc("/presigned-get-url", storage.PresignedGetURLHandler)
 	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationHandler)
+	mux.HandleFunc("/frames-extraction-complete", handlers.FrameExtractionNotificationHandler)
+	mux.HandleFunc("/ws", handlers.WebSocketHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
 	handler := c.Handler(mux)

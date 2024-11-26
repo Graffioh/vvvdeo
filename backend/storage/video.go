@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -82,39 +84,72 @@ func extractFrames(videoPath, framesDir string) error {
 	return nil
 }
 
+func zipFramesInMemory(framesDir string) (*bytes.Buffer, error) {
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+	defer zipWriter.Close()
+
+	err := filepath.Walk(framesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(framesDir, path)
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %w", path, err)
+		}
+		defer file.Close()
+
+		writer, err := zipWriter.Create(relPath)
+		if err != nil {
+			return fmt.Errorf("failed to create entry for file %s: %w", path, err)
+		}
+
+		_, err = io.Copy(writer, file)
+		if err != nil {
+			return fmt.Errorf("failed to write file %s to zip: %w", path, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error walking frames directory: %w", err)
+	}
+
+	return buf, nil
+}
+
 func uploadFrames(bucket, framesDir, videoKey string) error {
 	fmt.Println("Uploading frames...")
 
-	files, err := os.ReadDir(framesDir)
+	buf, err := zipFramesInMemory(framesDir)
 	if err != nil {
-		return fmt.Errorf("failed to read frames directory: %w", err)
+		return fmt.Errorf("failed to zip frames: %w", err)
 	}
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
+	zipKey := fmt.Sprintf("frames/%s/frames.zip", videoKey)
 
-		framePath := filepath.Join(framesDir, file.Name())
-		frameKey := fmt.Sprintf("frames/%s/%s", videoKey, file.Name())
-
-		frameFile, err := os.Open(framePath)
-		if err != nil {
-			return fmt.Errorf("failed to open frame file: %w", err)
-		}
-		defer frameFile.Close()
-
-		client := GetS3Client()
-		_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(frameKey),
-			Body:   frameFile,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to upload frame: %w", err)
-		}
+	client := GetS3Client()
+	contentLength := int64(buf.Len())
+	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:        aws.String(bucket),
+		Key:           aws.String(zipKey),
+		Body:          bytes.NewReader(buf.Bytes()),
+		ContentLength: &contentLength,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload zip file: %w", err)
 	}
 
+	fmt.Println("Frames successfully uploaded!")
 	return nil
 }
 
