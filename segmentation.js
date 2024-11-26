@@ -138,19 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { presignedUrl: getUrl } = await presignedGetResponse.json();
 
-      // notify the backend that the video is uploaded to start ffmpeg work
-      const videoNotificationResponse = await fetch(
-        backendUrl + "/video-upload-complete",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ videoKey }),
-        },
-      );
-
-      if (!videoNotificationResponse.ok) {
-        throw new Error("Video notification response error!");
-      }
+      // enable inference button + show the video in the video player
 
       // show video in the video player
       videoPlayer.src = getUrl;

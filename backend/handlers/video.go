@@ -143,14 +143,27 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 
 func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
 	type Notification struct {
-		VideoKey string `json:"videoKey"`
+		VideoKey    string `json:"videoKey"`
+		VideoStatus string `json:"videoStatus"`
 	}
 	var notification Notification
-	err := json.NewDecoder(r.Body).Decode(&notification)
+
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
+		http.Error(w, "Could not read body", http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Raw Body: %s\n", string(bodyBytes))
+
+	err = json.Unmarshal(bodyBytes, &notification)
+	if err != nil {
+		fmt.Printf("Decode Error: %v\n", err)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+
+	fmt.Printf("VideoKey: %s\n", notification.VideoKey)
+	fmt.Printf("VideoStatus: %s\n", notification.VideoStatus)
 
 	var bucketName = os.Getenv("R2_BUCKET")
 
@@ -164,33 +177,3 @@ func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprint(w, "Video notification sent", http.StatusOK)
 }
-
-/*
-func UploadVideoHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
-		return
-	}
-
-	file, fileHeader, err := r.FormFile("video")
-	videoName := fileHeader.Filename
-
-	vidPath := filepath.Join("../sam2seg/vid", videoName)
-	dst, err := os.Create(vidPath)
-	if err != nil {
-		http.Error(w, "Error creating file", http.StatusInternalServerError)
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, file); err != nil {
-		http.Error(w, "Error saving file in img dir", http.StatusInternalServerError)
-	}
-
-	util.ConvertIntoFrames(videoName)
-}*/

@@ -16,3 +16,5 @@ backend/.env
 backend/tmp
 
 todo.md
+
+node_modules/
