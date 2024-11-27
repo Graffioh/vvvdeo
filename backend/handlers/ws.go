@@ -9,7 +9,7 @@ import (
 )
 
 type WebSocketMessage struct {
-	VideoKey string `json:"videoKey"`
+	Key string `json:"videoKey"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var jobids = make(map[string]*websocket.Conn)
+var key_socket_connections = make(map[string]*websocket.Conn)
 
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -37,7 +37,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	videoKey := strings.Split(msg.VideoKey, "/")[1]
+	videoKey := strings.Split(msg.Key, "/")[1]
 
-	jobids[videoKey] = conn
+	key_socket_connections[videoKey] = conn
 }

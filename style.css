@@ -78,6 +78,8 @@ video {
     border: 2px solid black;
     outline-style: solid;
     outline-color: white;
+    width: 5px;
+    height: 5px;
 }
 
 #shapes-container .square {
@@ -85,6 +87,8 @@ video {
     border: 2px solid black;
     outline-style: solid;
     outline-color: white;
+    width: 5px;
+    height: 5px;
 }
 
 #seg-add {

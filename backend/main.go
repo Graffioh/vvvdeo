@@ -32,12 +32,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/zawarudo/*", handlers.VideoHandler)
+	//mux.HandleFunc("/zawarudo/*", handlers.PlayVideoHandler)
 	mux.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
 	mux.HandleFunc("/presigned-put-url", storage.PresignedPutURLHandler)
 	mux.HandleFunc("/presigned-get-url", storage.PresignedGetURLHandler)
-	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationHandler)
-	mux.HandleFunc("/frames-extraction-complete", handlers.FrameExtractionNotificationHandler)
+	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationFromWorkerHandler)
+	mux.HandleFunc("/frames-extraction-complete", handlers.FrameNotificationFromWorkerHandler)
 	mux.HandleFunc("/ws", handlers.WebSocketHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 

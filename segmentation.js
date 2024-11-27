@@ -64,7 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // image preview
   const fileInput = document.getElementById("input-img");
-
   fileInput.addEventListener("change", (event) => {
     const preview = document.getElementById("preview");
     const file = event.target.files[0];
@@ -100,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     connToWs();
   }
 
+  // connect to websocket for event-driven workflow
   async function connectWebSocket(videoKey) {
     return new Promise((resolve, reject) => {
       ws = new WebSocket("ws://localhost:8080/ws");
@@ -127,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // display the video in <video> tag after video processing
   async function displayVideo(videoKey) {
     const presignedGetUrl =
       "http://localhost:8080/presigned-get-url?key=" + videoKey;
@@ -138,11 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const { presignedUrl: getUrl } = await presignedGetResponse.json();
 
-      // Show video in the video player
+      // show video in the video player
       videoPlayer.src = getUrl;
       videoPlayer.style.display = "block";
 
-      // Enable run inference button
+      // enable run inference button
       inferenceVideoButtonElement.disabled = false;
     } catch (error) {
       console.error("Error fetching presigned GET URL:", error);

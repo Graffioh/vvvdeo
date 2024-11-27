@@ -15,33 +15,33 @@ export default {
 	async queue(batch) {
 		for (const message of batch.messages) {
 			try {
-				const videoKey = message.body.object.key;
+				const key = message.body.object.key;
 
-				if (videoKey.includes('videos/')) {
+				if (key.includes('videos/')) {
 					const videoUploadResponse = await fetch('https://6593-2-45-237-19.ngrok-free.app/video-upload-complete', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ videoKey: videoKey, videoStatus: 'uploaded' }),
+						body: JSON.stringify({ videoKey: key, status: 'uploaded' }),
 					});
 
 					if (!videoUploadResponse.ok) {
-						throw new Error(`Failed to process video: ${videoUploadResponse.statusText}`);
+						throw new Error(`Failed to send Video upload notification: ${videoUploadResponse.statusText}`);
 					}
-				} else if (videoKey.includes('frames/')) {
+				} else if (key.includes('frames/')) {
 					const frameExtractionResponse = await fetch('https://6593-2-45-237-19.ngrok-free.app/frames-extraction-complete', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ videoKey: videoKey, videoStatus: 'extracted' }),
+						body: JSON.stringify({ videoKey: key, status: 'extracted' }),
 					});
 
 					if (!frameExtractionResponse.ok) {
-						throw new Error(`Failed to extract frames: ${frameExtractionResponse.statusText}`);
+						throw new Error(`Failed to send Frames extraction notification: ${frameExtractionResponse.statusText}`);
 					}
 				}
 
 				message.ack();
 			} catch (err) {
-				console.error('Error processing message:', err);
+				console.error('Error processing message from queue:', err);
 
 				message.retry();
 			}

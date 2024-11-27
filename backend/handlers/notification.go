@@ -3,17 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"veedeo/storage"
 )
 
+/*
 func min(a int64, b int64) int64 {
 	if a < b {
 		return a
@@ -54,7 +51,6 @@ func getLastUploadedVideo(w http.ResponseWriter) string {
 
 func handleMP4video(w http.ResponseWriter, r *http.Request) {
 	videoPath := getLastUploadedVideo(w)
-	fmt.Println(videoPath)
 	videoData, err := os.Open(videoPath)
 	if err != nil {
 		log.Printf("Error opening video file: %v", err)
@@ -101,8 +97,6 @@ func handleMP4video(w http.ResponseWriter, r *http.Request) {
 		end = min(start+chunk_size-1, videoSize-1)
 	}
 
-	log.Printf("range header: %v", rangeHeader)
-
 	remainingBytes := end - start + 1
 
 	w.Header().Set("Content-Type", "video/mp4")
@@ -131,7 +125,7 @@ func isMP4Format(path string) bool {
 	return strings.HasSuffix(path, ".mp4")
 }
 
-func VideoHandler(w http.ResponseWriter, r *http.Request) {
+func PlayVideoHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	if isMP4Format(path) {
@@ -139,69 +133,65 @@ func VideoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.NotFound(w, r)
 	}
-}
+	}*/
 
 type Notification struct {
-	VideoKey    string `json:"videoKey"`
-	VideoStatus string `json:"videoStatus"`
+	VideoKey string `json:"videoKey"`
+	Status   string `json:"status"`
 }
 
-func VideoUploadNotificationHandler(w http.ResponseWriter, r *http.Request) {
-	var notification Notification
+func VideoUploadNotificationFromWorkerHandler(w http.ResponseWriter, r *http.Request) {
+	var video_notification Notification
 
-	bodyBytes, err := io.ReadAll(r.Body)
+	err := json.NewDecoder(r.Body).Decode(&video_notification)
 	if err != nil {
-		http.Error(w, "Could not read body", http.StatusBadRequest)
-		return
-	}
-	fmt.Printf("Raw Body: %s\n", string(bodyBytes))
-
-	err = json.Unmarshal(bodyBytes, &notification)
-	if err != nil {
-		fmt.Printf("Decode Error: %v\n", err)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		fmt.Printf("Video notification decode Error: %v\n", err)
+		http.Error(w, "Invalid Video upload notification request payload", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("VideoKey: %s\n", notification.VideoKey)
-	fmt.Printf("VideoStatus: %s\n", notification.VideoStatus)
+	fmt.Printf("VideoKey: %s\n", video_notification.VideoKey)
+	fmt.Printf("VideoStatus: %s\n", video_notification.Status)
 
 	var bucketName = os.Getenv("R2_BUCKET")
 
+	// convert the video into frames and store them in r2 bucket
 	go func() {
-		err := storage.ProcessVideo(bucketName, notification.VideoKey)
+		err := storage.ProcessVideo(bucketName, video_notification.VideoKey)
 		if err != nil {
 			fmt.Fprintf(w, "Error processing the video! %v", err)
 			return
 		}
 	}()
 
-	fmt.Fprint(w, "Video notification sent", http.StatusOK)
+	fmt.Fprint(w, "Video upload notification received.", http.StatusOK)
 }
 
-func FrameExtractionNotificationHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Frame extraction\n")
-
-	type Message struct {
+func FrameNotificationFromWorkerHandler(w http.ResponseWriter, r *http.Request) {
+	type FrameExtractionMessage struct {
 		Message  string `json:"message"`
 		Status   string `json:"status"`
 		VideoKey string `json:"videoKey"`
 	}
 
-	fmt.Printf("JOBIDS: %v\n", jobids)
+	var frames_notification Notification
 
-	var notification Notification
+	err := json.NewDecoder(r.Body).Decode(&frames_notification)
+	if err != nil {
+		fmt.Printf("Frame notification decode Error: %v\n", err)
+		http.Error(w, "Invalid Frame extraction notification request payload", http.StatusBadRequest)
+		return
+	}
 
-	err := json.NewDecoder(r.Body).Decode(&notification)
+	fmt.Printf("FrameKey: %s\n", frames_notification.VideoKey)
+	fmt.Printf("FrameStatus: %s\n", frames_notification.Status)
 
-	fmt.Printf("NOTIFICATION: %v", notification)
+	videoNameKey := strings.Split(frames_notification.VideoKey, "/")[1]
+	videoKey := "videos/" + videoNameKey
 
-	job_id := strings.Split(notification.VideoKey, "/")[1]
-	videoKey := "videos/" + job_id
-
-	ws_conn := jobids[job_id]
-
-	if err = ws_conn.WriteJSON(Message{
+	// send notification to frontend client
+	wsConnection := key_socket_connections[videoNameKey]
+	if err = wsConnection.WriteJSON(FrameExtractionMessage{
 		Message:  "frame extraction",
 		Status:   "completed",
 		VideoKey: videoKey,
@@ -210,5 +200,5 @@ func FrameExtractionNotificationHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fmt.Fprint(w, "Frame extraction complete!", http.StatusOK)
+	fmt.Fprint(w, "Frame extraction complete.", http.StatusOK)
 }

@@ -16,8 +16,6 @@ import (
 )
 
 func downloadVideo(bucket, key, localPath string) error {
-	fmt.Println("Downloading video...")
-
 	client := GetS3Client()
 	resp, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
@@ -60,14 +58,10 @@ func ensureMp4Extension(videoPath string) (string, error) {
 }
 
 func extractFrames(videoPath, framesDir string) error {
-	fmt.Println("Extracting frames...")
-
 	err := os.MkdirAll(framesDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create frames directory: %w", err)
 	}
-
-	fmt.Println(videoPath)
 
 	cmd := exec.Command("ffmpeg",
 		"-i", videoPath,
@@ -81,6 +75,7 @@ func extractFrames(videoPath, framesDir string) error {
 		return fmt.Errorf("FFmpeg error: %w\nOutput: %s", err, string(output))
 	}
 
+	fmt.Println("Frame extracted!")
 	return nil
 }
 
@@ -128,8 +123,6 @@ func zipFramesInMemory(framesDir string) (*bytes.Buffer, error) {
 }
 
 func uploadFrames(bucket, framesDir, videoKey string) error {
-	fmt.Println("Uploading frames...")
-
 	buf, err := zipFramesInMemory(framesDir)
 	if err != nil {
 		return fmt.Errorf("failed to zip frames: %w", err)
@@ -153,30 +146,65 @@ func uploadFrames(bucket, framesDir, videoKey string) error {
 	return nil
 }
 
+func cleanDirectory(dirPath string) error {
+	// Walk through the directory and delete all files and subdirectories
+	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the root directory itself
+		if path == dirPath {
+			return nil
+		}
+
+		// Remove the file or directory
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+
+		fmt.Printf("Removed: %s\n", path)
+		return nil
+	})
+}
+
 func ProcessVideo(bucket, videoKey string) error {
 	fmt.Println("Video processing started...")
 
 	keyPath := strings.Split(videoKey, "/")[1]
 
-	localVideoPath := "./tmp/videos/" + keyPath
-	framesDir := "./tmp/frames/" + keyPath
+	// clean videos and frames dir before starting
+	if err := cleanDirectory("./tmp/videos"); err != nil {
+		fmt.Printf("Error cleaning temporary video directory: %v\n", err)
+	} else {
+		fmt.Println("Temporary Video directory cleaned successfully.")
+	}
 
-	err := downloadVideo(bucket, videoKey, localVideoPath)
+	if err := cleanDirectory("./tmp/frames"); err != nil {
+		fmt.Printf("Error cleaning temporary frames directory: %v\n", err)
+	} else {
+		fmt.Println("Temporary Frames directory cleaned successfully.")
+	}
+
+	videoPath := "./tmp/videos/" + keyPath
+	framesPath := "./tmp/frames/" + keyPath
+
+	err := downloadVideo(bucket, videoKey, videoPath)
 	if err != nil {
 		return fmt.Errorf("failed to download video: %w", err)
 	}
 
-	updatedVideoPath, err := ensureMp4Extension(localVideoPath)
+	updatedVideoPath, err := ensureMp4Extension(videoPath)
 	if err != nil {
 		return fmt.Errorf("failed to ensure MP4 extension: %w", err)
 	}
 
-	err = extractFrames(updatedVideoPath, framesDir)
+	err = extractFrames(updatedVideoPath, framesPath)
 	if err != nil {
 		return fmt.Errorf("failed to extract frames: %w", err)
 	}
 
-	err = uploadFrames(bucket, framesDir, keyPath)
+	err = uploadFrames(bucket, framesPath, keyPath)
 	if err != nil {
 		return fmt.Errorf("failed to upload frames: %w", err)
 	}
