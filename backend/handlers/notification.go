@@ -153,9 +153,8 @@ func VideoUploadNotificationFromWorkerHandler(w http.ResponseWriter, r *http.Req
 	fmt.Printf("VideoKey: %s\n", video_notification.VideoKey)
 	fmt.Printf("VideoStatus: %s\n", video_notification.Status)
 
-	var bucketName = os.Getenv("R2_BUCKET")
-
 	// convert the video into frames and store them in r2 bucket
+	var bucketName = os.Getenv("R2_BUCKET")
 	go func() {
 		err := storage.ProcessVideo(bucketName, video_notification.VideoKey)
 		if err != nil {

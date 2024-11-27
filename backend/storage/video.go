@@ -147,25 +147,12 @@ func uploadFrames(bucket, framesDir, videoKey string) error {
 }
 
 func cleanDirectory(dirPath string) error {
-	// Walk through the directory and delete all files and subdirectories
-	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	if err := os.RemoveAll(dirPath); err != nil {
+		return err
+	}
 
-		// Skip the root directory itself
-		if path == dirPath {
-			return nil
-		}
-
-		// Remove the file or directory
-		if err := os.RemoveAll(path); err != nil {
-			return err
-		}
-
-		fmt.Printf("Removed: %s\n", path)
-		return nil
-	})
+	fmt.Printf("Removed: %s\n", dirPath)
+	return nil
 }
 
 func ProcessVideo(bucket, videoKey string) error {
@@ -173,7 +160,7 @@ func ProcessVideo(bucket, videoKey string) error {
 
 	keyPath := strings.Split(videoKey, "/")[1]
 
-	// clean videos and frames dir before starting
+	// clean videos and frames directories before starting
 	if err := cleanDirectory("./tmp/videos"); err != nil {
 		fmt.Printf("Error cleaning temporary video directory: %v\n", err)
 	} else {
