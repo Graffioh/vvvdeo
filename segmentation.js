@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let isVideoPlayable = true;
   let isPositiveLabel = true;
 
+  // add negative or positive points for segmentation
   function addPoint(event, shapeType, label) {
     const videoRect = videoPlayer.getBoundingClientRect();
     const scaleX = videoPlayer.videoWidth / videoPlayer.offsetWidth;
@@ -50,32 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
     addNegativeLabelButton.style.color = "black";
   });
 
-  /*
-  const inferenceFrameButtonElement = document.getElementById(
-    "inference-frame-btn",
-  );
-
-  inferenceFrameButtonElement.addEventListener("click", () => {
-    fetch(backendUrl + "/inference-frame", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ coordinates: coordinates, labels: labels }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("result:", data);
-
-        const segmentedFrame = document.getElementById("segmented-frame");
-        segmentedFrame.src = "./sam2seg/" + data.segmented_image_path;
-        segmentedFrame.style.display = "block";
-      })
-      .catch((error) => console.error("Error:", error));
-  });
-  */
-
-  // add points on the video for segmentation inference
   videoPlayer.addEventListener("click", (event) => {
     if (!isVideoPlayable) {
       event.preventDefault();
@@ -87,9 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // image preview
   const fileInput = document.getElementById("input-img");
 
-  // image preview
   fileInput.addEventListener("change", (event) => {
     const preview = document.getElementById("preview");
     const file = event.target.files[0];
@@ -109,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "inference-video-btn",
   );
 
-  // VIDEO UPLOAD
+  // VIDEO UPLOAD + WEBSOCKET CONNECTION
   //
   let videoName = "";
   const videoInputUpload = document.getElementById("input-video");
@@ -117,14 +92,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let wsKey = localStorage.getItem("videoKey");
 
-  console.log(wsKey);
-
   if (wsKey) {
-    const func = async () => {
+    const connToWs = async () => {
       await connectWebSocket(wsKey);
     };
 
-    func();
+    connToWs();
   }
 
   async function connectWebSocket(videoKey) {
@@ -147,14 +120,14 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Received message from server:", message);
 
         if (message.status === "completed") {
-          await fetchPresignedGetUrlAndDisplayVideo(message.videoKey);
+          await displayVideo(message.videoKey);
           localStorage.removeItem("videoKey");
         }
       };
     });
   }
 
-  async function fetchPresignedGetUrlAndDisplayVideo(videoKey) {
+  async function displayVideo(videoKey) {
     const presignedGetUrl =
       "http://localhost:8080/presigned-get-url?key=" + videoKey;
 
@@ -176,11 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  videoInputUpload.addEventListener("change", async (event) => {
-    event.preventDefault();
-    const videoFile = videoInputUpload.files[0];
-    videoName = videoFile.name;
-
+  async function uploadVideoAndConnectToWebsocket(videoFile) {
     // upload video to r2 bucket with presigned url
     const presignedPutUrl = "http://localhost:8080/presigned-put-url";
     const presignedPutResponse = await fetch(presignedPutUrl, {
@@ -198,33 +167,18 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("videoKey", videoKey);
 
     await connectWebSocket(videoKey);
+  }
+
+  videoInputUpload.addEventListener("change", async (event) => {
+    event.preventDefault();
+    const videoFile = videoInputUpload.files[0];
+    videoName = videoFile.name;
+
+    uploadVideoAndConnectToWebsocket(videoFile);
   });
-
-  /*
-
-    const formData = new FormData();
-    formData.append("video", videoFile);
-    formData.append("video_name", videoName);
-
-    try {
-      const response = await fetch(backendUrl + "/uploadvideo", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        alert("Video uploaded successfully");
-      } else {
-        alert("Video upload failed");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-    */
 
   // INFERENCE
   //
-
   const spinner = document.getElementById("loading-spinner");
   const loadingText = document.getElementById("loading-text");
 
