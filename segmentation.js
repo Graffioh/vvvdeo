@@ -89,18 +89,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoInputUpload = document.getElementById("input-video");
   let ws;
 
-  let wsKey = localStorage.getItem("videoKey");
+  let videoKey = localStorage.getItem("videoKey");
 
-  if (wsKey) {
+  if (videoKey) {
     const connToWs = async () => {
-      await connectWebSocket(wsKey);
+      await connectToWebSocket(videoKey);
     };
 
     connToWs();
   }
 
   // connect to websocket for event-driven workflow
-  async function connectWebSocket(videoKey) {
+  async function connectToWebSocket(videoKey) {
     return new Promise((resolve, reject) => {
       ws = new WebSocket("ws://localhost:8080/ws");
 
@@ -120,8 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Received message from server:", message);
 
         if (message.status === "completed") {
-          await displayVideo(message.videoKey);
           localStorage.removeItem("videoKey");
+          await displayVideo(message.videoKey);
         }
       };
     });
@@ -129,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // display the video in <video> tag after video processing
   async function displayVideo(videoKey) {
+    console.log(videoKey);
     const presignedGetUrl =
       "http://localhost:8080/presigned-get-url?key=" + videoKey;
 
@@ -157,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       method: "POST",
     });
 
-    const { presignedUrl: uploadUrl, key: videoKey } =
+    const { presignedUrl: uploadUrl, key: newVideoKey } =
       await presignedPutResponse.json();
 
     await fetch(uploadUrl, {
@@ -165,9 +166,11 @@ document.addEventListener("DOMContentLoaded", () => {
       body: videoFile,
     });
 
+    videoKey = newVideoKey;
+
     localStorage.setItem("videoKey", videoKey);
 
-    await connectWebSocket(videoKey);
+    await connectToWebSocket(videoKey);
   }
 
   videoInputUpload.addEventListener("change", async (event) => {
@@ -188,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
 
     formData.append("image", imageFile);
-    formData.append("video_name", videoName);
+    formData.append("videoKey", videoKey);
     formData.append(
       "data",
       JSON.stringify({
@@ -217,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
+      // download video directly in the browser after inference
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");

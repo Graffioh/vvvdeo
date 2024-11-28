@@ -74,9 +74,9 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	videoKey := r.FormValue("videoKey")
-	framesKey := "frames/" + strings.Split(videoKey, "/")[1]
+	fileKey := strings.Split(videoKey, "/")[1]
 
-	pythonURL := fmt.Sprintf("http://localhost:9000/predict-frames?image=%s&video_key=%s&frames_key=%s", imageName, videoKey, framesKey)
+	pythonURL := fmt.Sprintf("http://localhost:9000/predict-frames?image=%s&key=%s", imageName, fileKey)
 	resp, err := http.Post(pythonURL, "application/json", bytes.NewBuffer(coordsJSON))
 	if err != nil {
 		http.Error(w, "Error communicating with Python server", http.StatusInternalServerError)

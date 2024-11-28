@@ -67,7 +67,7 @@ func extractFrames(videoPath, framesDir string) error {
 		"-i", videoPath,
 		"-q:v", "2",
 		"-start_number", "0",
-		fmt.Sprintf("%s/frame_%%05d.jpg", framesDir),
+		fmt.Sprintf("%s/%%05d.jpg", framesDir),
 	)
 
 	output, err := cmd.CombinedOutput()

@@ -9,6 +9,10 @@ import time
 import cv2
 import supervision as sv
 import subprocess
+import shutil
+import requests
+import tempfile
+import zipfile
 
 def clear_directory(directory_path):
     for filename in os.listdir(directory_path):
@@ -113,25 +117,88 @@ def load_and_prepare_image(image_path, required_format="RGBA"):
 
     return image
 
+def get_path_from_presignedurl(key) -> str:
+        url = f"http://localhost:8080/presigned-get-url?key={key}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            response_data = response.json()
+
+            path = response_data.get('presignedUrl')
+            if not path:
+                raise RuntimeError("Response did not contain 'presignedUrl'.")
+            return path
+        except requests.RequestException as e:
+            raise RuntimeError(f"Failed to fetch presigned URL: {e}")
+
 input_video = "./static/video_result.mp4"
 output_video = "./static/output_compatible.mp4"
+
+def download_video(video_url, temp_dir):
+    local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
+
+    try:
+        with requests.get(video_url, stream=True) as response:
+            response.raise_for_status()
+            with open(local_video_path, 'wb') as f:
+                shutil.copyfileobj(response.raw, f)
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"Failed to download video: {e}")
+
+    return local_video_path
+
+def download_and_extract_zip(zip_url, temp_dir):
+    # Define paths
+    zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
+    extract_dir = os.path.join(temp_dir, "frames")
+
+    # Download the .zip file
+    try:
+        with requests.get(zip_url, stream=True) as response:
+            response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+            with open(zip_path, 'wb') as f:
+                shutil.copyfileobj(response.raw, f)  # Save the streamed content
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"Failed to download zip file: {e}")
+
+    # Extract the .zip file
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_dir)  # Extract into the "frames/" directory
+    except zipfile.BadZipFile:
+        raise ValueError("The downloaded file is not a valid .zip archive")
+
+    return extract_dir
 
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
     try:
-        vid_name = request.args.get("video_name")
-        if not vid_name:
-            raise ValueError("video_name parameter is required")
-        try:
-            dir_frames = vid_name.split(".")[0]
-            video_info = sv.VideoInfo.from_video_path("./vid/" + vid_name)
-        except AttributeError:
-            raise ValueError("Invalid video name format")
-        except FileNotFoundError:
-            raise ValueError(f"Video file not found: {vid_name}")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # get r2 bucket object url
+            file_key = request.args.get('key')
 
-        inference_state = predictor.init_state(video_path="./frames/" + dir_frames)
-        predictor.reset_state(inference_state)
+            if not file_key:
+                return jsonify({"error": "Missing 'file_key' in request body"}), 400
+            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
+            video_name = file_key
+
+            local_video_path = download_video(cloudflare_video_path, temp_dir)
+            try:
+                video_info = sv.VideoInfo.from_video_path(local_video_path)
+                print("VIDEO INFO: ", video_info)
+            except AttributeError:
+                raise ValueError("Invalid video name format")
+            except FileNotFoundError:
+                raise ValueError(f"Video file not found: {video_name}")
+
+            cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
+            local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
+
+            inference_state = predictor.init_state(video_path=local_frames_path)
+            predictor.reset_state(inference_state)
+
+
+        print("INFERENCE STATE: " + inference_state)
 
         data = request.get_json()
         points = data.get("coordinates", [])
@@ -168,7 +235,7 @@ def predict_frames():
         )
 
         frames_paths = sorted(sv.list_files_with_extensions(
-            directory="./frames/" + dir_frames,
+            directory=local_frames_path,
             extensions=["jpg"]))
 
         overlay_img = None
@@ -214,7 +281,7 @@ def predict_frames():
         audio_extracted = False
         try:
             audio_command = [
-                "ffmpeg", "-i", f"./vid/{vid_name}",
+                "ffmpeg", "-i", f"./vid/{video_name}",
                 "-vn", "-acodec", "aac", "-y", audio_file
             ]
             subprocess.run(audio_command, check=True)
