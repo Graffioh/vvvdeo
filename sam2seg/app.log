@@ -1,0 +1,58 @@
+2024-11-28 19:26:16,384 - INFO - Starting the application... [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:34]
+2024-11-28 19:26:19,149 - INFO - Received request for /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:194]
+2024-11-28 19:26:19,152 - DEBUG - Temp directory created: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpl1f0vh2x [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:197]
+2024-11-28 19:26:19,153 - INFO - File key received: video-3b47e52b-ce4e-4127-898b-0535a5c410f1 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:205]
+2024-11-28 19:26:19,169 - DEBUG - Cloudflare video path: https://vvvdeo-bucket.9e4b2c37a64d67bc605113cf8d32a234.r2.cloudflarestorage.com/videos/video-3b47e52b-ce4e-4127-898b-0535a5c410f1?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=c27f456a78a745f88e36bfa86dbf8d81%2F20241128%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20241128T182619Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=65644f5759c9fdda63ded55a0cef3e72486dc161d61082659bc895fec3588135 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:208]
+2024-11-28 19:26:19,380 - DEBUG - Local video path: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpl1f0vh2x/downloaded_video.mp4 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:213]
+2024-11-28 19:26:19,404 - DEBUG - Video info successfully retrieved [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:218]
+2024-11-28 19:26:19,684 - DEBUG - Frames extracted to: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpl1f0vh2x/frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:228]
+2024-11-28 19:26:22,594 - INFO - Inference state initialized and reset [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:234]
+2024-11-28 19:26:22,594 - DEBUG - Request JSON: {'coordinates': [], 'labels': []} [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:237]
+2024-11-28 19:26:22,594 - WARNING - No overlay image provided [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:247]
+2024-11-28 19:26:22,600 - ERROR - Error occurred in /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:269]
+Traceback (most recent call last):
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py", line 250, in predict_frames
+    for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+  File "/Users/ubreglia/.pyenv/versions/3.10.15/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 36, in generator_context
+    response = gen.send(None)
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/src/sam-2/sam2/sam2_video_predictor.py", line 679, in propagate_in_video
+    raise RuntimeError("No points are provided; please add points first")
+RuntimeError: No points are provided; please add points first
+2024-11-28 19:26:33,940 - INFO - Received request for /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:194]
+2024-11-28 19:26:33,941 - DEBUG - Temp directory created: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmp8lom0k62 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:197]
+2024-11-28 19:26:33,941 - INFO - File key received: video-3b47e52b-ce4e-4127-898b-0535a5c410f1 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:205]
+2024-11-28 19:26:33,949 - DEBUG - Cloudflare video path: https://vvvdeo-bucket.9e4b2c37a64d67bc605113cf8d32a234.r2.cloudflarestorage.com/videos/video-3b47e52b-ce4e-4127-898b-0535a5c410f1?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=c27f456a78a745f88e36bfa86dbf8d81%2F20241128%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20241128T182633Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=2648bac40109db471a171bd8640f005f4f35be0cdc29b78f7320df57f41a1417 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:208]
+2024-11-28 19:26:34,129 - DEBUG - Local video path: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmp8lom0k62/downloaded_video.mp4 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:213]
+2024-11-28 19:26:34,156 - DEBUG - Video info successfully retrieved [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:218]
+2024-11-28 19:26:34,491 - DEBUG - Frames extracted to: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmp8lom0k62/frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:228]
+2024-11-28 19:26:37,316 - INFO - Inference state initialized and reset [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:234]
+2024-11-28 19:26:37,317 - DEBUG - Request JSON: {'coordinates': [{'x': 508.62616, 'y': 293.7016}], 'labels': [1]} [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:237]
+2024-11-28 19:26:37,318 - WARNING - No overlay image provided [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:247]
+2024-11-28 19:26:37,322 - ERROR - Error occurred in /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:269]
+Traceback (most recent call last):
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py", line 250, in predict_frames
+    for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+  File "/Users/ubreglia/.pyenv/versions/3.10.15/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 36, in generator_context
+    response = gen.send(None)
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/src/sam-2/sam2/sam2_video_predictor.py", line 679, in propagate_in_video
+    raise RuntimeError("No points are provided; please add points first")
+RuntimeError: No points are provided; please add points first
+2024-11-28 19:26:51,663 - INFO - Received request for /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:194]
+2024-11-28 19:26:51,664 - DEBUG - Temp directory created: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpfj691wg9 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:197]
+2024-11-28 19:26:51,666 - INFO - File key received: video-3b47e52b-ce4e-4127-898b-0535a5c410f1 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:205]
+2024-11-28 19:26:51,678 - DEBUG - Cloudflare video path: https://vvvdeo-bucket.9e4b2c37a64d67bc605113cf8d32a234.r2.cloudflarestorage.com/videos/video-3b47e52b-ce4e-4127-898b-0535a5c410f1?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=c27f456a78a745f88e36bfa86dbf8d81%2F20241128%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20241128T182651Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=0a119501d973601ddf529aec413fd0b1eeebae032de9333bcf59b29cd63f8a0c [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:208]
+2024-11-28 19:26:51,864 - DEBUG - Local video path: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpfj691wg9/downloaded_video.mp4 [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:213]
+2024-11-28 19:26:51,896 - DEBUG - Video info successfully retrieved [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:218]
+2024-11-28 19:26:52,295 - DEBUG - Frames extracted to: /var/folders/5t/r3qv33fn5kqdhjg2r74tpl3m0000gp/T/tmpfj691wg9/frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:228]
+2024-11-28 19:26:55,102 - INFO - Inference state initialized and reset [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:234]
+2024-11-28 19:26:55,103 - DEBUG - Request JSON: {'coordinates': [{'x': 508.62616, 'y': 293.7016}], 'labels': [1]} [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:237]
+2024-11-28 19:26:55,103 - INFO - Overlay image: falrepli.png [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:245]
+2024-11-28 19:26:55,107 - ERROR - Error occurred in /predict-frames [in /Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py:269]
+Traceback (most recent call last):
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/sam2segmentation.py", line 250, in predict_frames
+    for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+  File "/Users/ubreglia/.pyenv/versions/3.10.15/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 36, in generator_context
+    response = gen.send(None)
+  File "/Users/ubreglia/Desktop/veedeo/sam2seg/src/sam-2/sam2/sam2_video_predictor.py", line 679, in propagate_in_video
+    raise RuntimeError("No points are provided; please add points first")
+RuntimeError: No points are provided; please add points first

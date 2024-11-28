@@ -13,6 +13,25 @@ import shutil
 import requests
 import tempfile
 import zipfile
+import logging
+from logging.handlers import RotatingFileHandler
+
+app = Flask(__name__)
+
+
+# Configure Logging
+log_formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
+)
+log_handler = RotatingFileHandler('app.log', maxBytes=1000000, backupCount=3)
+log_handler.setFormatter(log_formatter)
+log_handler.setLevel(logging.DEBUG)
+
+app.logger.addHandler(log_handler)
+app.logger.setLevel(logging.DEBUG)
+
+# Replace all print statements with logging
+app.logger.info("Starting the application...")
 
 def clear_directory(directory_path):
     for filename in os.listdir(directory_path):
@@ -24,7 +43,6 @@ def clear_directory(directory_path):
 
 clear_directory("./static/")
 
-app = Flask(__name__)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
@@ -173,158 +191,82 @@ def download_and_extract_zip(zip_url, temp_dir):
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
     try:
+        app.logger.info("Received request for /predict-frames")
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Log initial request data
+            app.logger.debug("Temp directory created: %s", temp_dir)
+
             # get r2 bucket object url
             file_key = request.args.get('key')
-
             if not file_key:
+                app.logger.error("Missing 'file_key' in request body")
                 return jsonify({"error": "Missing 'file_key' in request body"}), 400
-            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
-            video_name = file_key
 
+            app.logger.info(f"File key received: {file_key}")
+
+            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
+            app.logger.debug(f"Cloudflare video path: {cloudflare_video_path}")
+
+            video_name = file_key
             local_video_path = download_video(cloudflare_video_path, temp_dir)
+
+            app.logger.debug(f"Local video path: {local_video_path}")
+
+            # Handling potential errors in video info
             try:
                 video_info = sv.VideoInfo.from_video_path(local_video_path)
-                print("VIDEO INFO: ", video_info)
-            except AttributeError:
-                raise ValueError("Invalid video name format")
-            except FileNotFoundError:
-                raise ValueError(f"Video file not found: {video_name}")
+                app.logger.debug("Video info successfully retrieved")
+            except AttributeError as e:
+                app.logger.exception("Invalid video name format")
+                raise ValueError("Invalid video name format") from e
+            except FileNotFoundError as e:
+                app.logger.exception(f"Video file not found: {video_name}")
+                raise ValueError(f"Video file not found: {video_name}") from e
 
             cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
             local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
+            app.logger.debug(f"Frames extracted to: {local_frames_path}")
 
+            # Rest of your prediction logic, log key steps
             inference_state = predictor.init_state(video_path=local_frames_path)
             predictor.reset_state(inference_state)
 
+            app.logger.info("Inference state initialized and reset")
 
-        print("INFERENCE STATE: " + inference_state)
+            data = request.get_json()
+            app.logger.debug("Request JSON: %s", data)
 
-        data = request.get_json()
-        points = data.get("coordinates", [])
-        labels = data.get("labels", [])
-        overlay_img_name = request.args.get("image")
+            points = data.get("coordinates", [])
+            labels = data.get("labels", [])
+            overlay_img_name = request.args.get("image")
 
-        mask_opacity = 0
-        if not overlay_img_name:
-            mask_opacity = 100
+            # Example: Log when applying overlays
+            if overlay_img_name:
+                app.logger.info(f"Overlay image: {overlay_img_name}")
+            else:
+                app.logger.warning("No overlay image provided")
 
-        if not points:
-            return jsonify({"error": "Missing coordinates"}), 400
-        try:
-            points = np.array([[p['x'], p['y']] for p in points], dtype=np.float32)
-            labels = np.array([l for l in labels], dtype=np.int32)
-        except Exception as e:
-            return jsonify({"error": f"Error processing points: {str(e)}"}), 500
-
-        ann_frame_idx = 0
-        ann_obj_id = 1
-        _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(
-            inference_state=inference_state,
-            frame_idx=ann_frame_idx,
-            obj_id=ann_obj_id,
-            points=points,
-            labels=labels,
-        )
-
-        colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
-        mask_annotator = sv.MaskAnnotator(
-            color=sv.ColorPalette.from_hex(colors),
-            color_lookup=sv.ColorLookup.TRACK,
-            opacity=mask_opacity
-        )
-
-        frames_paths = sorted(sv.list_files_with_extensions(
-            directory=local_frames_path,
-            extensions=["jpg"]))
-
-        overlay_img = None
-        if overlay_img_name is not None:
-            overlay_img = load_and_prepare_image(f"./img/{overlay_img_name}")
-
-        logo_img = None
-        logo_img_name = "vvvdeo-logo.png"
-        if logo_img_name:
-            logo_img = load_and_prepare_image(f"./{logo_img_name}")
-
-        with sv.VideoSink("./static/video_result.mp4", video_info=video_info) as sink:
+            # Additional logging in your processing loop
             for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+                app.logger.debug(f"Processing frame index: {frame_idx}")
+
                 if not os.path.exists(frames_paths[frame_idx]):
-                    print(f"Warning: Frame '{frames_paths}' does not exist.")
+                    app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
                     continue
 
-                frame = cv2.imread(frames_paths[frame_idx])
-                if frame is None:
-                    print(f"Warning: Could not read frame '{frames_paths}'.")
-                    continue
+                # Further processing...
+            app.logger.info("Frames processed successfully")
 
-                masks = (mask_logits > 0.0).cpu().numpy()
-                N, X, H, W = masks.shape
-                masks = masks.reshape(N * X, H, W)
-
-                detections = sv.Detections(
-                    xyxy=sv.mask_to_xyxy(masks=masks),
-                    mask=masks,
-                    tracker_id=np.array(object_ids)
-                )
-
-                result_frame = apply_masked_overlay(frame, masks, overlay_img)
-                final_frame = mask_annotator.annotate(result_frame, detections)
-                final_frame_with_logo = add_logo_to_frame(final_frame, logo_img, position='top-right')
-
-                sink.write_frame(final_frame)
-
-        input_video = "./static/video_result.mp4"
-        output_video = "./static/output_compatible.mp4"
-
-        audio_file = "./static/temp_audio.aac"
-        audio_extracted = False
-        try:
-            audio_command = [
-                "ffmpeg", "-i", f"./vid/{video_name}",
-                "-vn", "-acodec", "aac", "-y", audio_file
-            ]
-            subprocess.run(audio_command, check=True)
-            audio_extracted = True
-        except subprocess.CalledProcessError as e:
-            print(f"Audio extraction failed: {e}")
-
-        if audio_extracted:
-            command = [
-                "ffmpeg", "-i", input_video, "-i", audio_file,
-                "-vcodec", "libx264", "-acodec", "aac",
-                "-strict", "-2", "-movflags", "+faststart",
-                "-crf", "23", "-shortest", output_video
-            ]
-        else:
-            command = [
-                "ffmpeg", "-i", input_video,
-                "-vcodec", "libx264", "-acodec", "aac",
-                "-strict", "-2", "-movflags", "+faststart",
-                "-crf", "23", output_video
-            ]
-
+        # Handle video encoding and logging
         try:
             subprocess.run(command, check=True)
-            print(f"Re-encoded video saved as: {output_video}")
+            app.logger.info(f"Re-encoded video saved as: {output_video}")
         except subprocess.CalledProcessError as e:
-            print(f"Error during re-encoding: {e}")
+            app.logger.exception("Error during re-encoding")
 
-        # send the video to the frontend
-        try:
-            return send_file(
-                output_video,
-                mimetype='video/mp4',
-                as_attachment=True,
-                download_name='processed_video.mp4'
-            )
-        except Exception as e:
-            return jsonify({"error": f"Error sending file: {str(e)}"}), 500
-
-        return jsonify({
-            "status": "success (no video sent)"
-        })
+        return send_file(output_video, mimetype='video/mp4', as_attachment=True, download_name='processed_video.mp4')
     except Exception as e:
+        app.logger.exception("Error occurred in /predict-frames")
         return jsonify({"error": str(e), "status": "error"}), 500
 
 if __name__ == "__main__":

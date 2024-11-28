@@ -220,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
+      /*
       // download video directly in the browser after inference
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -230,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      */
 
       inferenceVideoButtonElement.hidden = false;
     } catch (error) {
