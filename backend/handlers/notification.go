@@ -185,7 +185,8 @@ func FrameNotificationFromWorkerHandler(w http.ResponseWriter, r *http.Request) 
 	fmt.Printf("FrameKey: %s\n", frames_notification.VideoKey)
 	fmt.Printf("FrameStatus: %s\n", frames_notification.Status)
 
-	videoNameKey := strings.Split(frames_notification.VideoKey, "/")[1]
+	videoNameKeyParts := strings.Split(frames_notification.VideoKey, "/")[1]
+	videoNameKey := strings.TrimSuffix(videoNameKeyParts, ".zip")
 	videoKey := "videos/" + videoNameKey
 
 	// send notification to frontend client
@@ -195,7 +196,7 @@ func FrameNotificationFromWorkerHandler(w http.ResponseWriter, r *http.Request) 
 		Status:   "completed",
 		VideoKey: videoKey,
 	}); err != nil {
-		log.Println(err)
+		log.Printf("ERROR SENDING MESSAGE TO FRONTEND FROM WEBSOCKET! error: %v", err)
 		return
 	}
 

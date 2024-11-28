@@ -32,7 +32,6 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	//mux.HandleFunc("/zawarudo/*", handlers.PlayVideoHandler)
 	mux.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
 	mux.HandleFunc("/presigned-put-url", storage.PresignedPutURLHandler)
 	mux.HandleFunc("/presigned-get-url", storage.PresignedGetURLHandler)

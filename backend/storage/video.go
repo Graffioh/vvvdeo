@@ -128,7 +128,7 @@ func uploadFrames(bucket, framesDir, videoKey string) error {
 		return fmt.Errorf("failed to zip frames: %w", err)
 	}
 
-	zipKey := fmt.Sprintf("frames/%s/frames.zip", videoKey)
+	zipKey := fmt.Sprintf("frames/%s.zip", videoKey)
 
 	client := GetS3Client()
 	contentLength := int64(buf.Len())
@@ -137,9 +137,11 @@ func uploadFrames(bucket, framesDir, videoKey string) error {
 		Key:           aws.String(zipKey),
 		Body:          bytes.NewReader(buf.Bytes()),
 		ContentLength: &contentLength,
+		ContentType:   aws.String("application/zip"),
 	})
+
 	if err != nil {
-		return fmt.Errorf("failed to upload zip file: %w", err)
+		return fmt.Errorf("failed to upload frames .zip: %w", err)
 	}
 
 	fmt.Println("Frames successfully uploaded!")
