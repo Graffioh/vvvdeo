@@ -3,12 +3,9 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -20,19 +17,6 @@ type VideoCoordinates struct {
 type Points struct {
 	Coordinates []VideoCoordinates `json:"coordinates"`
 	Labels      []int32            `json:"labels"`
-}
-
-func uploadImage(w http.ResponseWriter, file multipart.File, fileHeader *multipart.FileHeader) {
-	imgPath := filepath.Join("../sam2seg/img", fileHeader.Filename)
-	dst, err := os.Create(imgPath)
-	if err != nil {
-		http.Error(w, "Error creating file", http.StatusInternalServerError)
-	}
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, file); err != nil {
-		http.Error(w, "Error saving file in img dir", http.StatusInternalServerError)
-	}
 }
 
 func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,37 +31,69 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, fileHeader, err := r.FormFile("image")
-	var imageName string = ""
-	if file != nil {
-		uploadImage(w, file, fileHeader)
-		imageName = fileHeader.Filename
-		defer file.Close()
-	}
-
-	jsonData := r.FormValue("data")
-	if jsonData == "" {
-		http.Error(w, "No JSON data provided", http.StatusBadRequest)
-		return
-	}
-
-	var points Points
-	if err := json.Unmarshal([]byte(jsonData), &points); err != nil {
-		http.Error(w, "Error parsing JSON data", http.StatusBadRequest)
-		return
-	}
-
-	coordsJSON, err := json.Marshal(points)
+	imageFile, imageFileHeader, err := r.FormFile("image")
 	if err != nil {
-		http.Error(w, "Failed to create JSON", http.StatusInternalServerError)
+		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+		return
+	}
+	defer imageFile.Close()
+
+	segmentationData := r.FormValue("segmentationData")
+	if segmentationData == "" {
+		http.Error(w, "No segmentationData as JSON data provided", http.StatusBadRequest)
 		return
 	}
 
 	videoKey := r.FormValue("videoKey")
-	fileKey := strings.Split(videoKey, "/")[1]
+	key := strings.Split(videoKey, "/")[1]
 
-	pythonURL := fmt.Sprintf("http://localhost:9000/predict-frames?image=%s&key=%s", imageName, fileKey)
-	resp, err := http.Post(pythonURL, "application/json", bytes.NewBuffer(coordsJSON))
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	segmentationPart, err := writer.CreateFormField("segmentationData")
+	if err != nil {
+		http.Error(w, "Error creating form field for JSON", http.StatusInternalServerError)
+		return
+	}
+	_, err = segmentationPart.Write([]byte(segmentationData))
+	if err != nil {
+		http.Error(w, "Error writing JSON to form field", http.StatusInternalServerError)
+		return
+	}
+
+	imagePart, err := writer.CreateFormFile("image", imageFileHeader.Filename)
+	if err != nil {
+		http.Error(w, "Error creating form file for image", http.StatusInternalServerError)
+		return
+	}
+	_, err = io.Copy(imagePart, imageFile)
+	if err != nil {
+		http.Error(w, "Error writing file to form file", http.StatusInternalServerError)
+		return
+	}
+
+	fileKeyPart, err := writer.CreateFormField("fileKey")
+	if err != nil {
+		http.Error(w, "Error creating form field for fileKey", http.StatusInternalServerError)
+		return
+	}
+	_, err = fileKeyPart.Write([]byte(key))
+	if err != nil {
+		http.Error(w, "Error writing fileKey to form field", http.StatusInternalServerError)
+		return
+	}
+	writer.Close()
+
+	pythonURL := "http://localhost:9000/predict-frames"
+	req, err := http.NewRequest("POST", pythonURL, body)
+	if err != nil {
+		http.Error(w, "Error creating Python server request", http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, "Error communicating with Python server", http.StatusInternalServerError)
 		return
@@ -85,9 +101,7 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	contentType := resp.Header.Get("Content-Type")
-
 	if contentType == "application/json" {
-		// Handle error response
 		var result map[string]interface{}
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			http.Error(w, "Error decoding Python server response", http.StatusInternalServerError)

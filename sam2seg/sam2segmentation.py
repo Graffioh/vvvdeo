@@ -18,7 +18,6 @@ from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 
-# Configure Logging
 log_formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
 )
@@ -29,19 +28,7 @@ log_handler.setLevel(logging.DEBUG)
 app.logger.addHandler(log_handler)
 app.logger.setLevel(logging.DEBUG)
 
-# Replace all print statements with logging
 app.logger.info("Starting the application...")
-
-def clear_directory(directory_path):
-    for filename in os.listdir(directory_path):
-        file_path = os.path.join(directory_path, filename)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-        elif os.path.isdir(file_path):
-            shutil.rmtree(file_path)
-
-clear_directory("./static/")
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
@@ -116,10 +103,12 @@ def apply_masked_overlay(frame, masks, overlay_img):
 
 def load_and_prepare_image(image_path, required_format="RGBA"):
     if not os.path.exists(image_path):
+        app.logger.error(f"Image file not found: {image_path}.")
         raise ValueError(f"Image file not found: {image_path}")
 
     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
     if image is None:
+        app.logger.error(f"Failed to load image: {image_path}.")
         raise ValueError(f"Failed to load image: {image_path}")
 
     if len(image.shape) == 2:
@@ -150,9 +139,6 @@ def get_path_from_presignedurl(key) -> str:
         except requests.RequestException as e:
             app.logger.error("Failed to fetch presigned URL!")
             raise RuntimeError(f"Failed to fetch presigned URL: {e}")
-
-input_video = "./static/video_result.mp4"
-output_video = "./static/output_compatible.mp4"
 
 def download_video(video_url, temp_dir):
     local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
@@ -199,7 +185,7 @@ def predict_frames():
             app.logger.debug("Temp directory created: %s", temp_dir)
 
             # get r2 bucket object url
-            file_key = request.args.get('key')
+            file_key = request.form.get('fileKey')
 
             if not file_key:
                 app.logger.error("Missing 'file_key' in request body")
@@ -225,21 +211,20 @@ def predict_frames():
             predictor.reset_state(inference_state)
             app.logger.info("Inference state initialized and reset")
 
-            data = request.get_json()
-            app.logger.debug("Request JSON: %s", data)
+            segmentation_data = request.form.get("segmentationData")
+            if not segmentation_data:
+                app.logger.error("Missing 'segmentationData' in request body")
+                return jsonify({"error": "Missing 'segmentationData' in request body"}), 400
 
-            points = data.get("coordinates", [])
-            labels = data.get("labels", [])
-            overlay_img_name = request.args.get("image")
+            try:
+                segmentation_data_json = json.loads(segmentation_data)
+                app.logger.debug("Segmentation Data received as JSON: %s", segmentation_data_json)
+            except json.JSONDecodeError as e:
+                app.logger.error("Error decoding segmentationData JSON: %s", str(e))
+                return jsonify({"error": "Invalid JSON in 'segmentationData'"}), 400
 
-            if overlay_img_name:
-                app.logger.info(f"Overlay image: {overlay_img_name}")
-            else:
-                app.logger.warning("No overlay image provided")
-
-            mask_opacity = 0
-            if not overlay_img_name:
-                mask_opacity = 100
+            points = segmentation_data_json.get("coordinates", [])
+            labels = segmentation_data_json.get("labels", [])
 
             if not points:
                 app.logger.error("Missing coordinates!")
@@ -261,22 +246,23 @@ def predict_frames():
                 labels=labels,
             )
 
-            colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
-            mask_annotator = sv.MaskAnnotator(
-                color=sv.ColorPalette.from_hex(colors),
-                color_lookup=sv.ColorLookup.TRACK,
-                opacity=mask_opacity
-            )
-
             frames_paths = sorted(sv.list_files_with_extensions(
                 directory=local_frames_path,
                 extensions=["jpg"]))
 
-            overlay_img = None
-            if overlay_img_name is not None and overlay_img_name != "":
-                overlay_img = load_and_prepare_image(f"./img/{overlay_img_name}")
-                app.logger.info("Overlay image loaded and prepared.")
+            mask_opacity = 0
+            overlay_img_file = request.files.get("image")
+            if overlay_img_file:
+                file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
 
+                overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
+
+                if overlay_img is not None and overlay_img.shape[-1] != 4:
+                    b, g, r = cv2.split(overlay_img)[:3]
+                    alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
+                    overlay_img = cv2.merge((b, g, r, alpha))
+            else:
+                mask_opacity = 0.5
 
             logo_img = None
             logo_img_name = "vvvdeo-logo.png"
@@ -284,11 +270,16 @@ def predict_frames():
                 logo_img = load_and_prepare_image(f"./{logo_img_name}")
                 app.logger.info("Logo image loaded and prepared.")
 
-            app.logger.info("Video propagation and sinking starting soon.")
-            with sv.VideoSink("./static/video_result.mp4", video_info=video_info) as sink:
-                for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
-                    app.logger.info(f"Processing frame: {frame_idx}")
+            colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
+            mask_annotator = sv.MaskAnnotator(
+                color=sv.ColorPalette.from_hex(colors),
+                color_lookup=sv.ColorLookup.TRACK,
+                opacity=mask_opacity
+            )
 
+            app.logger.info("Video propagation and sinking starting...")
+            with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
+                for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
                     if not os.path.exists(frames_paths[frame_idx]):
                         app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
                         continue
@@ -308,68 +299,61 @@ def predict_frames():
                         tracker_id=np.array(object_ids)
                     )
 
-                    app.logger.info("Supervision detections loaded")
-
                     result_frame = apply_masked_overlay(frame, masks, overlay_img)
-                    app.logger.info("Masked overlay applied")
-
                     final_frame = mask_annotator.annotate(result_frame, detections)
-                    app.logger.info("Annotation applied")
-
                     final_frame_with_logo = add_logo_to_frame(final_frame, logo_img, position='top-right')
-                    app.logger.info("Logo included in the video")
 
                     sink.write_frame(final_frame_with_logo)
 
                 app.logger.info("Video propagation successful.")
 
-        input_video = "./static/video_result.mp4"
-        output_video = "./static/output_compatible.mp4"
+            input_video = temp_dir + "/video_result.mp4"
+            output_video = temp_dir + "/output_compatible.mp4"
 
-        audio_file = "./static/temp_audio.aac"
-        audio_extracted = False
-        try:
-            audio_command = [
-                "ffmpeg", "-i", f"./vid/{video_name}",
-                "-vn", "-acodec", "aac", "-y", audio_file
-            ]
-            subprocess.run(audio_command, check=True)
-            audio_extracted = True
-        except subprocess.CalledProcessError as e:
-            app.logger.exception("Audio extraction from original video failed.")
-            print(f"Audio extraction failed: {e}")
+            audio_file = temp_dir + "/temp_audio.aac"
+            audio_extracted = False
+            try:
+                audio_command = [
+                    "ffmpeg", "-i", local_video_path,
+                    "-vn", "-acodec", "aac", "-y", audio_file
+                ]
+                subprocess.run(audio_command, check=True)
+                audio_extracted = True
+            except subprocess.CalledProcessError as e:
+                app.logger.exception("Audio extraction from original video failed.")
+                print(f"Audio extraction failed: {e}")
 
-        if audio_extracted:
-            command = [
-                "ffmpeg", "-i", input_video, "-i", audio_file,
-                "-vcodec", "libx264", "-acodec", "aac",
-                "-strict", "-2", "-movflags", "+faststart",
-                "-crf", "23", "-shortest", output_video
-            ]
-        else:
-            command = [
-                "ffmpeg", "-i", input_video,
-                "-vcodec", "libx264", "-acodec", "aac",
-                "-strict", "-2", "-movflags", "+faststart",
-                "-crf", "23", output_video
-            ]
+            if audio_extracted:
+                command = [
+                    "ffmpeg", "-i", input_video, "-i", audio_file,
+                    "-vcodec", "libx264", "-acodec", "aac",
+                    "-strict", "-2", "-movflags", "+faststart",
+                    "-crf", "23", "-shortest", output_video
+                ]
+            else:
+                command = [
+                    "ffmpeg", "-i", input_video,
+                    "-vcodec", "libx264", "-acodec", "aac",
+                    "-strict", "-2", "-movflags", "+faststart",
+                    "-crf", "23", output_video
+                ]
 
-        try:
-            subprocess.run(command, check=True)
-            app.logger.info("Video successfully re-encoded")
-        except subprocess.CalledProcessError as e:
-            app.logger.exception("Error during video re-encoding!")
+            try:
+                subprocess.run(command, check=True)
+                app.logger.info("Video successfully re-encoded")
+            except subprocess.CalledProcessError as e:
+                app.logger.exception("Error during video re-encoding!")
 
-        # send the video to the frontend
-        try:
-            return send_file(
-                output_video,
-                mimetype='video/mp4',
-                as_attachment=True,
-                download_name='processed_video.mp4'
-            )
-        except Exception as e:
-            return jsonify({"error": f"Error sending file: {str(e)}"}), 500
+            # send the video to the frontend for download
+            try:
+                return send_file(
+                    output_video,
+                    mimetype='video/mp4',
+                    as_attachment=True,
+                    download_name='processed_video.mp4'
+                )
+            except Exception as e:
+                return jsonify({"error": f"Error sending file: {str(e)}"}), 500
 
         return jsonify({
             "status": "success (no video sent)"

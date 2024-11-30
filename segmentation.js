@@ -63,8 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // image preview
-  const fileInput = document.getElementById("input-img");
-  fileInput.addEventListener("change", (event) => {
+  const imageInput = document.getElementById("input-img");
+  imageInput.addEventListener("change", (event) => {
     const preview = document.getElementById("preview");
     const file = event.target.files[0];
     const reader = new FileReader();
@@ -129,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // display the video in <video> tag after video processing
   async function displayVideo(videoKey) {
-    console.log(videoKey);
     const presignedGetUrl =
       "http://localhost:8080/presigned-get-url?key=" + videoKey;
 
@@ -187,13 +186,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingText = document.getElementById("loading-text");
 
   inferenceVideoButtonElement.addEventListener("click", async () => {
-    const imageFile = fileInput.files[0];
+    const imageFile = imageInput.files[0];
     const formData = new FormData();
 
     formData.append("image", imageFile);
     formData.append("videoKey", videoKey);
     formData.append(
-      "data",
+      "segmentationData",
       JSON.stringify({
         coordinates: coordinates,
         labels: labels,
@@ -220,7 +219,6 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      /*
       // download video directly in the browser after inference
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -231,7 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
-      */
 
       inferenceVideoButtonElement.hidden = false;
     } catch (error) {
