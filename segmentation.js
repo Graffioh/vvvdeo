@@ -1,4 +1,5 @@
 const backendUrl = "http://localhost:8080";
+const backendWsUrl = "ws://localhost:8080/ws";
 
 document.addEventListener("DOMContentLoaded", () => {
   // VIDEO SEGMENTATION
@@ -87,6 +88,22 @@ document.addEventListener("DOMContentLoaded", () => {
   //
   const videoInputUpload = document.getElementById("input-video");
 
+  async function displayVideo(videoKey) {
+    const presignedGetUrl = backendUrl + "/presigned-get-url?key=" + videoKey;
+    try {
+      const presignedGetResponse = await fetch(presignedGetUrl, {
+        method: "POST",
+      });
+      const { presignedUrl: getUrl } = await presignedGetResponse.json();
+
+      // show video in the video player
+      videoPlayer.src = getUrl;
+      videoPlayer.style.display = "block";
+    } catch (error) {
+      console.error("Error fetching presigned GET URL:", error);
+    }
+  }
+
   let ws;
   let videoKey = localStorage.getItem("videoKey");
   if (videoKey) {
@@ -94,13 +111,14 @@ document.addEventListener("DOMContentLoaded", () => {
       await connectToWebSocket(videoKey);
     };
 
+    videoInputUpload.disabled = true;
     connToWs();
   }
 
   // connect to websocket for event-driven workflow
   async function connectToWebSocket(videoKey) {
     return new Promise((resolve, reject) => {
-      ws = new WebSocket("ws://localhost:8080/ws");
+      ws = new WebSocket(backendWsUrl);
 
       ws.onopen = () => {
         console.log("WebSocket connection established");
@@ -118,8 +136,13 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Received message from server:", message);
 
         if (message.status === "completed") {
+          videoPreviewMessage.hidden = true;
+
           localStorage.removeItem("videoKey");
+          await displayVideo(message.videoKey);
           inferenceVideoButtonElement.disabled = false;
+          addPositiveLabelButton.disabled = false;
+          addNegativeLabelButton.disabled = false;
         }
       };
     });
@@ -127,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function uploadVideoAndConnectToWebsocket(videoFile) {
     // upload video to r2 bucket with presigned url
-    const presignedPutUrl = "http://localhost:8080/presigned-put-url";
+    const presignedPutUrl = backendUrl + "/presigned-put-url";
     const presignedPutResponse = await fetch(presignedPutUrl, {
       method: "POST",
     });
@@ -147,9 +170,12 @@ document.addEventListener("DOMContentLoaded", () => {
     await connectToWebSocket(videoKey);
   }
 
+  const videoPreviewMessage = document.getElementById("video-preview-msg");
+
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
+    videoInputUpload.disabled = true;
 
     if (videoFile) {
       const videoURL = URL.createObjectURL(videoFile);
@@ -173,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // show video in the video player
         videoPlayer.src = videoURL;
         videoPlayer.style.display = "block";
+        videoPreviewMessage.hidden = false;
 
         uploadVideoAndConnectToWebsocket(videoFile);
       });
@@ -200,7 +227,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     spinner.style.display = "block";
     loadingText.style.display = "block";
-    inferenceVideoButtonElement.hidden = true;
 
     try {
       const response = await fetch(backendUrl + "/inference-video", {
@@ -210,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
           Accept: "video/mp4",
         },
       });
+      inferenceVideoButtonElement.hidden = true;
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -235,6 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       spinner.style.display = "none";
       loadingText.style.display = "none";
+      inferenceVideoButtonElement.hidden = false;
     }
   });
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -30,14 +30,17 @@
             </form>
             <img id="img-preview" class="preview">
         </div>
-        <button id="seg-add">segment add</button>
-        <button id="seg-excl">segment exclude</button>
         <div id="video-btn-div">
              <div class="video-container">
                 <video id="video-player" controls width="1080"></video>
+                <div hidden id="video-preview-msg">
+                        Video preview, the video is processing...
+                    </div>
                 <div id="shapes-container"></div>
             </div>
         </div>
+        <button disabled id="seg-add">segment add</button>
+        <button disabled id="seg-excl">segment exclude</button>
         <div id="inf-btn-container">
             <button disabled id="inference-video-btn">RUN INFERENCE</button>
         </div>

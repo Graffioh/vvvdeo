@@ -94,8 +94,15 @@ video {
 #seg-add {
     background-color: green;
 }
+#seg-add:disabled {
+    background-color: #3d5c39;
+}
+
 #seg-excl {
     background-color: red;
+}
+#seg-excl:disabled {
+    background-color: #5c3c3c;
 }
 
 .images-grid {
@@ -176,4 +183,19 @@ video {
 #video-length-msg {
     color: #6c757d;
     font-size: 14px;
+}
+
+#video-preview-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 24px;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 5px;
+    pointer-events: none;
+    text-align: center;
+    z-index: 1; /* Ensures it stays above other content */
 }
