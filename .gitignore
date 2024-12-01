@@ -1,5 +1,7 @@
 .DS_store
 
+frontend/.env
+
 /shaka-player
 /video-hls
 /video-dash

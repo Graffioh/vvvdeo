@@ -1,5 +1,10 @@
-const backendUrl = "http://localhost:8080";
-const backendWsUrl = "ws://localhost:8080/ws";
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
+const backendUrl = process.env.BACKEND_URL_PROD || "http://localhost:8080";
+const backendWsUrl =
+  process.env.BACKEND_WS_URL_PROD || "ws://localhost:8080/ws";
 
 document.addEventListener("DOMContentLoaded", () => {
   // VIDEO SEGMENTATION
