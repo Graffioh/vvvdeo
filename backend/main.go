@@ -24,7 +24,7 @@ func main() {
 	}
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:8082", "http://localhost:9000", "http://127.0.0.1:8082"},
+		AllowedOrigins: []string{"http://localhost:9000", "vvvdeo.pages.dev", "vvvdeo.com", "http://localhost:5173"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{
 			"Accept",

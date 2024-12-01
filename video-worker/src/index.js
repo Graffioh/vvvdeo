@@ -12,13 +12,12 @@ export default {
 	async fetch() {
 		return new Response('vvvdeo video worker');
 	},
-	async queue(batch) {
-		const backendUrl = 'https://6593-2-45-237-19.ngrok-free.app';
+	async queue(batch, env) {
 		for (const message of batch.messages) {
 			const key = message.body.object.key;
 			try {
 				if (key.includes('videos/')) {
-					const videoUploadResponse = await fetch(backendUrl + '/video-upload-complete', {
+					const videoUploadResponse = await fetch(env.BACKEND_URL + '/video-upload-complete', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ videoKey: key, status: 'uploaded' }),
@@ -28,7 +27,7 @@ export default {
 						throw new Error(`Failed to send Video upload notification: ${videoUploadResponse.statusText}`);
 					}
 				} else if (key.includes('frames/')) {
-					const frameExtractionResponse = await fetch(backendUrl + '/frames-extraction-complete', {
+					const frameExtractionResponse = await fetch(env.BACKEND_URL + '/frames-extraction-complete', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ videoKey: key, status: 'extracted' }),
@@ -42,28 +41,6 @@ export default {
 				message.ack();
 			} catch (err) {
 				console.error('Error processing message from queue:', err);
-				if (key.includes('videos/')) {
-					const videoUploadResponse = await fetch(backendUrl + '/video-upload-complete', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ videoKey: '', status: 'error' }),
-					});
-
-					if (!videoUploadResponse.ok) {
-						throw new Error(`Failed to send Video upload notification: ${videoUploadResponse.statusText}`);
-					}
-				} else if (key.includes('frames/')) {
-					const frameExtractionResponse = await fetch(backendUrl + '/frames-extraction-complete', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ videoKey: '', status: 'error' }),
-					});
-
-					if (!frameExtractionResponse.ok) {
-						throw new Error(`Failed to send Frames extraction notification: ${frameExtractionResponse.statusText}`);
-					}
-				}
-
 				message.retry();
 			}
 		}
