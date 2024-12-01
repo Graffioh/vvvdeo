@@ -11,7 +11,7 @@ WORKDIR /app
 COPY . .
 
 # Build the Go app
-RUN go build -mod=vendor -o bin/veedeo main.go
+RUN go build -mod=vendor -o bin/veedeo
 
 # -- Stage 2 -- #
 # Create the final environment with the compiled binary.
