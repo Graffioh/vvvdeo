@@ -8,15 +8,7 @@ FROM golang:1.12-alpine as builder
 WORKDIR /app
 
 # Copy the necessary files from the project structure
-COPY backend ./backend
-COPY handlers ./handlers
-COPY storage ./storage
-COPY tmp ./tmp
-COPY env ./env
-COPY Dockerfile ./Dockerfile
-COPY go.mod ./go.mod
-COPY go.sum ./go.sum
-COPY main.go ./main.go
+COPY . .
 
 # Build the Go app
 RUN go build -mod=vendor -o bin/veedeo main.go
