@@ -198,3 +198,8 @@ video {
 #video-inference-container {
     margin-top: 14px;
 }
+
+#btn-labels-container {
+    display: flex;
+    gap: 4px;
+}
