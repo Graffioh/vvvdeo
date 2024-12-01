@@ -19,7 +19,7 @@ COPY go.sum ./go.sum
 COPY main.go ./main.go
 
 # Build the Go app
-RUN go build -mod=vendor -o bin/hello main.go
+RUN go build -mod=vendor -o bin/veedeo main.go
 
 # -- Stage 2 -- #
 # Create the final environment with the compiled binary.
@@ -31,6 +31,6 @@ RUN apk --no-cache add ca-certificates ffmpeg
 WORKDIR /root/
 
 # Copy the binary from the builder stage and set it as the default command
-COPY --from=builder /app/bin/hello /usr/local/bin/
+COPY --from=builder /app/bin/veedeo /usr/local/bin/
 
-CMD ["hello"]
+CMD ["veedeo"]
