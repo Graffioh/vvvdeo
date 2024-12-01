@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const addPositiveLabelButton = document.getElementById("seg-add");
   const addNegativeLabelButton = document.getElementById("seg-excl");
   let isVideoPlayable = true;
-  let isPositiveLabel = true;
 
   // add negative or positive points for segmentation
   function addPoint(event, shapeType, label) {
@@ -36,26 +35,41 @@ document.addEventListener("DOMContentLoaded", () => {
     shapesContainer.appendChild(shape);
   }
 
+  let activeLabel = null;
+
+  const updateLabelButtonUI = () => {
+    if (activeLabel === "positive") {
+      document.body.style.cursor = "crosshair";
+      addPositiveLabelButton.style.color = "black";
+      addNegativeLabelButton.style.color = "white";
+      isVideoPlayable = false;
+    } else if (activeLabel === "negative") {
+      document.body.style.cursor = "not-allowed";
+      addPositiveLabelButton.style.color = "white";
+      addNegativeLabelButton.style.color = "black";
+      isVideoPlayable = false;
+    } else {
+      document.body.style.cursor = "default";
+      addPositiveLabelButton.style.color = "white";
+      addNegativeLabelButton.style.color = "white";
+      isVideoPlayable = true;
+    }
+  };
+
   addPositiveLabelButton.addEventListener("click", () => {
-    isVideoPlayable = false;
-    isPositiveLabel = true;
-    document.body.style.cursor = "crosshair";
-    addPositiveLabelButton.style.color = "black";
-    addNegativeLabelButton.style.color = "white";
+    activeLabel = activeLabel === "positive" ? null : "positive";
+    updateLabelButtonUI();
   });
 
   addNegativeLabelButton.addEventListener("click", () => {
-    isVideoPlayable = false;
-    isPositiveLabel = false;
-    document.body.style.cursor = "not-allowed";
-    addPositiveLabelButton.style.color = "white";
-    addNegativeLabelButton.style.color = "black";
+    activeLabel = activeLabel === "negative" ? null : "negative";
+    updateLabelButtonUI();
   });
 
   videoPlayer.addEventListener("click", (event) => {
     if (!isVideoPlayable) {
       event.preventDefault();
-      if (isPositiveLabel) {
+      if (activeLabel === "positive") {
         addPoint(event, "circle", 1);
       } else {
         addPoint(event, "square", 0);
@@ -86,6 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // VIDEO UPLOAD + WEBSOCKET CONNECTION
   //
+  const videoInferenceContainer = document.getElementById(
+    "video-inference-container",
+  );
   const videoInputUpload = document.getElementById("input-video");
 
   async function displayVideo(videoKey) {
@@ -139,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
           videoPreviewMessage.hidden = true;
 
           localStorage.removeItem("videoKey");
+          videoInferenceContainer.hidden = false;
           await displayVideo(message.videoKey);
           inferenceVideoButtonElement.disabled = false;
           addPositiveLabelButton.disabled = false;
@@ -176,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
     videoInputUpload.disabled = true;
+    videoInferenceContainer.hidden = false;
 
     if (videoFile) {
       const videoURL = URL.createObjectURL(videoFile);
@@ -227,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     spinner.style.display = "block";
     loadingText.style.display = "block";
+    inferenceVideoButtonElement.hidden = true;
 
     try {
       const response = await fetch(backendUrl + "/inference-video", {
@@ -236,7 +256,6 @@ document.addEventListener("DOMContentLoaded", () => {
           Accept: "video/mp4",
         },
       });
-      inferenceVideoButtonElement.hidden = true;
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -255,8 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
-
-      inferenceVideoButtonElement.hidden = false;
     } catch (error) {
       console.error("Error:", error);
     } finally {

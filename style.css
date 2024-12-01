@@ -17,11 +17,6 @@ main {
 }
 
 #video-btn-div {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background-color: #3d3d3d;
-    padding: 1.2em;
-    border-radius: 8px;
 }
 
 #btns-div {
@@ -197,5 +192,9 @@ video {
     border-radius: 5px;
     pointer-events: none;
     text-align: center;
-    z-index: 1; /* Ensures it stays above other content */
+    z-index: 1;
+}
+
+#video-inference-container {
+    margin-top: 14px;
 }

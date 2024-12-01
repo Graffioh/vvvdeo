@@ -22,7 +22,7 @@
         <form enctype="multipart/form-data">
             <input id="input-video" type="file" name="video" accept="video/mp4">
         </form>
-        <h3>Pick an image for the mask overlay</h3>
+        <h3>Pick an image</h3>
         <div class="images-grid">
             <form enctype="multipart/form-data">
                 <input id="input-img" type="file" name="image" accept="image/*">
@@ -30,22 +30,22 @@
             </form>
             <img id="img-preview" class="preview">
         </div>
-        <div id="video-btn-div">
-             <div class="video-container">
+        <div hidden id="video-inference-container">
+            <div class="video-container">
                 <video id="video-player" controls width="1080"></video>
                 <div hidden id="video-preview-msg">
                         Video preview, the video is processing...
                     </div>
                 <div id="shapes-container"></div>
             </div>
+            <button disabled id="seg-add">Add area</button>
+            <button disabled id="seg-excl">Exclude area</button>
+            <div id="inf-btn-container">
+                <button disabled id="inference-video-btn">RUN INFERENCE</button>
+            </div>
+            <div class="spinner" id="loading-spinner"></div>
+            <div class="spinner-text" id="loading-text">Crafting the video...</div>
         </div>
-        <button disabled id="seg-add">segment add</button>
-        <button disabled id="seg-excl">segment exclude</button>
-        <div id="inf-btn-container">
-            <button disabled id="inference-video-btn">RUN INFERENCE</button>
-        </div>
-        <div class="spinner" id="loading-spinner"></div>
-        <div class="spinner-text" id="loading-text">Processing video...</div>
     </main>
 </body>
 </html>
