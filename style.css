@@ -172,3 +172,8 @@ video {
     cursor: not-allowed;
     border: 1px solid #ced4da;
 }
+
+#video-length-msg {
+    color: #6c757d;
+    font-size: 14px;
+}

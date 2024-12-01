@@ -154,11 +154,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoFile) {
       const videoURL = URL.createObjectURL(videoFile);
 
-      // show video in the video player
-      videoPlayer.src = videoURL;
-      videoPlayer.style.display = "block";
+      // 10 seconds length check
+      const tempVideo = document.createElement("video");
+      tempVideo.src = videoURL;
+      tempVideo.addEventListener("loadedmetadata", () => {
+        const videoDuration = tempVideo.duration;
 
-      uploadVideoAndConnectToWebsocket(videoFile);
+        if (videoDuration > 10) {
+          alert(
+            "Video is longer than 10 seconds. Please select a shorter video.",
+          );
+          URL.revokeObjectURL(videoURL);
+
+          videoInputUpload.value = "";
+          return;
+        }
+
+        // show video in the video player
+        videoPlayer.src = videoURL;
+        videoPlayer.style.display = "block";
+
+        uploadVideoAndConnectToWebsocket(videoFile);
+      });
     }
   });
 
