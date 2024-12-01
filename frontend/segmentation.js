@@ -1,10 +1,5 @@
-//const backendUrl = process.env.BACKEND_URL;
-//const backendWsUrl = process.env.BACKEND_WS_URL;
-
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const backendWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
-
-console.log(backendUrl);
 
 document.addEventListener("DOMContentLoaded", () => {
   // VIDEO SEGMENTATION
