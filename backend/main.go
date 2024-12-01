@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"veedeo/handlers"
 	"veedeo/storage"
 
@@ -12,9 +13,14 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file!")
+	env := os.Getenv("APP_ENV")
+	if env != "PROD" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Error loading .env file!")
+		}
+	} else {
+		log.Println("Running in production mode, skipping .env file")
 	}
 
 	c := cors.New(cors.Options{
