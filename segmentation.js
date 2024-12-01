@@ -65,13 +65,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // image preview
   const imageInput = document.getElementById("input-img");
   imageInput.addEventListener("change", (event) => {
-    const preview = document.getElementById("preview");
+    const imgPreview = document.getElementById("img-preview");
     const file = event.target.files[0];
     const reader = new FileReader();
 
     reader.onload = function () {
-      preview.src = reader.result;
-      preview.style.display = "block";
+      imgPreview.src = reader.result;
+      imgPreview.style.display = "block";
     };
 
     if (file) {
@@ -85,12 +85,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // VIDEO UPLOAD + WEBSOCKET CONNECTION
   //
-  let videoName = "";
   const videoInputUpload = document.getElementById("input-video");
+
   let ws;
-
   let videoKey = localStorage.getItem("videoKey");
-
   if (videoKey) {
     const connToWs = async () => {
       await connectToWebSocket(videoKey);
@@ -121,33 +119,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (message.status === "completed") {
           localStorage.removeItem("videoKey");
-          await displayVideo(message.videoKey);
+          inferenceVideoButtonElement.disabled = false;
         }
       };
     });
-  }
-
-  // display the video in <video> tag after video processing
-  async function displayVideo(videoKey) {
-    const presignedGetUrl =
-      "http://localhost:8080/presigned-get-url?key=" + videoKey;
-
-    try {
-      const presignedGetResponse = await fetch(presignedGetUrl, {
-        method: "POST",
-      });
-
-      const { presignedUrl: getUrl } = await presignedGetResponse.json();
-
-      // show video in the video player
-      videoPlayer.src = getUrl;
-      videoPlayer.style.display = "block";
-
-      // enable run inference button
-      inferenceVideoButtonElement.disabled = false;
-    } catch (error) {
-      console.error("Error fetching presigned GET URL:", error);
-    }
   }
 
   async function uploadVideoAndConnectToWebsocket(videoFile) {
@@ -175,9 +150,16 @@ document.addEventListener("DOMContentLoaded", () => {
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
-    videoName = videoFile.name;
 
-    uploadVideoAndConnectToWebsocket(videoFile);
+    if (videoFile) {
+      const videoURL = URL.createObjectURL(videoFile);
+
+      // show video in the video player
+      videoPlayer.src = videoURL;
+      videoPlayer.style.display = "block";
+
+      uploadVideoAndConnectToWebsocket(videoFile);
+    }
   });
 
   // INFERENCE
