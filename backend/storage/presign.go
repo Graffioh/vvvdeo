@@ -29,7 +29,7 @@ func PresignedPutURLHandler(w http.ResponseWriter, r *http.Request) {
 	presignClient := s3.NewPresignClient(client)
 
 	uuid := uuid.New()
-	key := fmt.Sprintf("videos/%s", "video-"+uuid.String())
+	key := fmt.Sprintf("videos/%s", "video-"+uuid.String()+"-"+os.Getenv("APP_ENV"))
 
 	presignResult, err := presignClient.PresignPutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
