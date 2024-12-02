@@ -225,16 +225,17 @@ def predict_frames():
         with tempfile.TemporaryDirectory() as temp_dir:
             app.logger.debug("Temp directory created: %s", temp_dir)
 
-            # get r2 bucket object url
+            # get r2 bucket object key
             file_key = request.form.get('fileKey')
-
             if not file_key:
                 app.logger.error("Missing 'file_key' in request body")
                 return jsonify({"error": "Missing 'file_key' in request body"}), 400
-            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
             video_name = file_key
 
+            # fetch video and frames with presigned urls
+            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
             local_video_path = download_video(cloudflare_video_path, temp_dir)
+
             try:
                 video_info = sv.VideoInfo.from_video_path(local_video_path)
                 app.logger.debug("Video info successfully retrieved")
@@ -248,10 +249,33 @@ def predict_frames():
             cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
             local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
 
+            # prepare overlay img and logo img
+            mask_opacity = 0
+            overlay_img_file = request.files.get("image")
+            if overlay_img_file:
+                file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+
+                overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
+
+                if overlay_img is not None and overlay_img.shape[-1] != 4:
+                    b, g, r = cv2.split(overlay_img)[:3]
+                    alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
+                    overlay_img = cv2.merge((b, g, r, alpha))
+            else:
+                mask_opacity = 0.5
+
+            logo_img = None
+            logo_img_name = "vvvdeo-logo.png"
+            if logo_img_name:
+                logo_img = load_and_prepare_image(f"./{logo_img_name}")
+                app.logger.info("Logo image loaded and prepared.")
+
+            # inference the initial state
             inference_state = predictor.init_state(video_path=local_frames_path)
             predictor.reset_state(inference_state)
             app.logger.info("Inference state initialized and reset")
 
+            # get points and labels from request
             segmentation_data = request.form.get("segmentationData")
             if not segmentation_data:
                 app.logger.error("Missing 'segmentationData' in request body")
@@ -277,6 +301,7 @@ def predict_frames():
                 app.logger.exception("Error processing points")
                 return jsonify({"error": f"Error processing points: {str(e)}"}), 500
 
+            # add points to ann_frame_idx frame
             ann_frame_idx = 0
             ann_obj_id = 1
             _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(
@@ -291,26 +316,6 @@ def predict_frames():
                 directory=local_frames_path,
                 extensions=["jpg"]))
 
-            mask_opacity = 0
-            overlay_img_file = request.files.get("image")
-            if overlay_img_file:
-                file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
-
-                overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
-
-                if overlay_img is not None and overlay_img.shape[-1] != 4:
-                    b, g, r = cv2.split(overlay_img)[:3]
-                    alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
-                    overlay_img = cv2.merge((b, g, r, alpha))
-            else:
-                mask_opacity = 0.5
-
-            logo_img = None
-            logo_img_name = "vvvdeo-logo.png"
-            if logo_img_name:
-                logo_img = load_and_prepare_image(f"./{logo_img_name}")
-                app.logger.info("Logo image loaded and prepared.")
-
             colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
             mask_annotator = sv.MaskAnnotator(
                 color=sv.ColorPalette.from_hex(colors),
@@ -318,6 +323,7 @@ def predict_frames():
                 opacity=mask_opacity
             )
 
+            # propagate the mask to all the frames and sink them into one video
             app.logger.info("Video propagation and sinking starting...")
             with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
                 for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
@@ -346,7 +352,7 @@ def predict_frames():
 
                     sink.write_frame(final_frame_with_logo)
 
-                app.logger.info("Video propagation successful.")
+            app.logger.info("Video propagation successful.")
 
             output_video = reencode_audio_in_video(temp_dir, local_video_path)
 
