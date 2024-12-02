@@ -4,7 +4,7 @@
 
 # -- Stage 1 -- #
 # Compile the app.
-FROM golang:1.12-alpine as builder
+FROM golang:1.22.3-alpine as builder
 WORKDIR /app
 
 # Copy the necessary files from the project structure
