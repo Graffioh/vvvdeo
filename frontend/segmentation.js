@@ -193,8 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
-    videoInputUpload.disabled = true;
-    videoInferenceContainer.hidden = false;
 
     if (videoFile) {
       const videoURL = URL.createObjectURL(videoFile);
@@ -215,6 +213,8 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
+        videoInputUpload.disabled = true;
+        videoInferenceContainer.hidden = false;
         // show video in the video player
         videoPlayer.src = videoURL;
         videoPlayer.style.display = "block";

@@ -41,6 +41,7 @@ export default {
 				message.ack();
 			} catch (err) {
 				console.error('Error processing message from queue:', err);
+				console.error('BACKEND URL: ', env.BACKEND_URL);
 				message.retry();
 			}
 		}
