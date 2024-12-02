@@ -178,6 +178,47 @@ def download_and_extract_zip(zip_url, temp_dir):
 
     return extract_dir
 
+def reencode_audio_in_video(temp_dir, local_video_path):
+    input_video = temp_dir + "/video_result.mp4"
+    output_video = temp_dir + "/output_compatible.mp4"
+
+    audio_file = temp_dir + "/temp_audio.aac"
+    audio_extracted = False
+    try:
+        audio_command = [
+            "ffmpeg", "-i", local_video_path,
+            "-vn", "-acodec", "aac", "-y", audio_file
+        ]
+        subprocess.run(audio_command, check=True)
+        audio_extracted = True
+    except subprocess.CalledProcessError as e:
+        app.logger.exception("Audio extraction from original video failed.")
+        print(f"Audio extraction failed: {e}")
+
+    if audio_extracted:
+        command = [
+            "ffmpeg", "-i", input_video, "-i", audio_file,
+            "-vcodec", "libx264", "-acodec", "aac",
+            "-strict", "-2", "-movflags", "+faststart",
+            "-crf", "23", "-shortest", output_video
+        ]
+    else:
+        command = [
+            "ffmpeg", "-i", input_video,
+            "-vcodec", "libx264", "-acodec", "aac",
+            "-strict", "-2", "-movflags", "+faststart",
+            "-crf", "23", output_video
+        ]
+
+    try:
+        subprocess.run(command, check=True)
+        app.logger.info("Video successfully re-encoded")
+    except subprocess.CalledProcessError as e:
+        app.logger.exception("Error during video re-encoding!")
+
+    return output_video
+
+
 @app.route("/predict-frames", methods=["POST"])
 def predict_frames():
     try:
@@ -307,42 +348,7 @@ def predict_frames():
 
                 app.logger.info("Video propagation successful.")
 
-            input_video = temp_dir + "/video_result.mp4"
-            output_video = temp_dir + "/output_compatible.mp4"
-
-            audio_file = temp_dir + "/temp_audio.aac"
-            audio_extracted = False
-            try:
-                audio_command = [
-                    "ffmpeg", "-i", local_video_path,
-                    "-vn", "-acodec", "aac", "-y", audio_file
-                ]
-                subprocess.run(audio_command, check=True)
-                audio_extracted = True
-            except subprocess.CalledProcessError as e:
-                app.logger.exception("Audio extraction from original video failed.")
-                print(f"Audio extraction failed: {e}")
-
-            if audio_extracted:
-                command = [
-                    "ffmpeg", "-i", input_video, "-i", audio_file,
-                    "-vcodec", "libx264", "-acodec", "aac",
-                    "-strict", "-2", "-movflags", "+faststart",
-                    "-crf", "23", "-shortest", output_video
-                ]
-            else:
-                command = [
-                    "ffmpeg", "-i", input_video,
-                    "-vcodec", "libx264", "-acodec", "aac",
-                    "-strict", "-2", "-movflags", "+faststart",
-                    "-crf", "23", output_video
-                ]
-
-            try:
-                subprocess.run(command, check=True)
-                app.logger.info("Video successfully re-encoded")
-            except subprocess.CalledProcessError as e:
-                app.logger.exception("Error during video re-encoding!")
+            output_video = reencode_audio_in_video(temp_dir, local_video_path)
 
             # send the video to the frontend for download
             try:

@@ -154,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (message.status === "completed") {
           videoPreviewMessage.hidden = true;
-
           localStorage.removeItem("videoKey");
           videoInferenceContainer.hidden = false;
           await displayVideo(message.videoKey);
@@ -247,6 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
     spinner.style.display = "block";
     loadingText.style.display = "block";
     inferenceVideoButtonElement.hidden = true;
+    addPositiveLabelButton.disabled = true;
+    addNegativeLabelButton.disabled = true;
+    imageInput.disabled = true;
 
     try {
       const response = await fetch(backendUrl + "/inference-video", {
@@ -263,6 +265,13 @@ document.addEventListener("DOMContentLoaded", () => {
           errorData.error || `HTTP error! status: ${response.status}`,
         );
       }
+
+      coordinates = [];
+      labels = [];
+      shapesContainer.innerHTML = "";
+      addPositiveLabelButton.disabled = false;
+      addNegativeLabelButton.disabled = false;
+      imageInput.disabled = false;
 
       // download video directly in the browser after inference
       const blob = await response.blob();
