@@ -11,7 +11,7 @@ WORKDIR /app
 COPY . .
 
 # Build the Go app
-RUN go build -mod=vendor -o bin/veedeo
+RUN go build -mod=vendor -o bin/vvvdeo
 
 # -- Stage 2 -- #
 # Create the final environment with the compiled binary.
@@ -23,6 +23,6 @@ RUN apk --no-cache add ca-certificates ffmpeg
 WORKDIR /root/
 
 # Copy the binary from the builder stage and set it as the default command
-COPY --from=builder /app/bin/veedeo /usr/local/bin/
+COPY --from=builder /app/bin/vvvdeo /usr/local/bin/
 
-CMD ["veedeo"]
+CMD ["vvvdeo"]
