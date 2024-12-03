@@ -309,10 +309,10 @@ def predict_frames():
                 return jsonify({"error": f"Error processing points: {str(e)}"}), 500
 
             # add points used for the segment prediction
-            segmentation_starting_frame_idx = 0
+            segmentation_frame_idx = 0
             _, _, _ = predictor.add_new_points_or_box(
                 inference_state=inference_state,
-                frame_idx=segmentation_starting_frame_idx,
+                frame_idx=segmentation_frame_idx,
                 obj_id=1,
                 points=points,
                 labels=labels,

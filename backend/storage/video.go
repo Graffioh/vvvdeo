@@ -63,12 +63,26 @@ func extractFrames(videoPath, framesDir string) error {
 		return fmt.Errorf("failed to create frames directory: %w", err)
 	}
 
-	cmd := exec.Command("ffmpeg",
-		"-i", videoPath,
-		"-q:v", "2",
-		"-start_number", "0",
-		fmt.Sprintf("%s/%%05d.jpg", framesDir),
-	)
+	env := os.Getenv("APP_ENV")
+
+	var cmd *exec.Cmd
+	if env == "PROD" {
+		cmd = exec.Command("ffmpeg",
+			"-i", videoPath,
+			"-q:v", "2",
+			"-start_number", "0",
+			fmt.Sprintf("%s/%%05d.jpg", framesDir),
+		)
+	} else {
+		// select a frame every 5 so the development workflow is faster when inferencing
+		cmd = exec.Command("ffmpeg",
+			"-i", videoPath,
+			"-vf", "select='not(mod(n, 5))'",
+			"-vsync", "vfr",
+			"-q:v", "2",
+			fmt.Sprintf("%s/%%05d.jpg", framesDir),
+		)
+	}
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

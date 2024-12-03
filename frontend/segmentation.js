@@ -296,6 +296,8 @@ document.addEventListener("DOMContentLoaded", () => {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+
+      localStorage.removeItem("videoKey");
     } catch (error) {
       console.error("Error:", error);
     } finally {
