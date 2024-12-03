@@ -285,7 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
       addNegativeLabelButton.disabled = false;
       imageInput.disabled = false;
       videoInputUpload.disabled = false;
-      localStorage.removeItem("videoKey");
 
       // download video directly in the browser after inference
       const blob = await response.blob();

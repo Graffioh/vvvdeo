@@ -15,114 +15,32 @@ import tempfile
 import zipfile
 import logging
 from logging.handlers import RotatingFileHandler
+import torch
+from sam2.sam2_video_predictor import SAM2VideoPredictor
 
 app = Flask(__name__)
 
+# logging setup
 log_formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
 )
 log_handler = RotatingFileHandler('app.log', maxBytes=1000000, backupCount=3)
 log_handler.setFormatter(log_formatter)
 log_handler.setLevel(logging.DEBUG)
-
 app.logger.addHandler(log_handler)
 app.logger.setLevel(logging.DEBUG)
-
 app.logger.info("Starting the application...")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
-model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
-predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
-    if logo_img is None:
-        return frame
+# local model
+#sam2_checkpoint = "./src/sam-2/checkpoints/sam2.1_hiera_small.pt"
+#model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
+#predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-    frame_h, frame_w = frame.shape[:2]
-    logo_h, logo_w = logo_img.shape[:2]
-
-    if position == 'top-right':
-        x = frame_w - logo_w - padding
-        y = padding
-    elif position == 'top-left':
-        x = padding
-        y = padding
-    elif position == 'bottom-right':
-        x = frame_w - logo_w - padding
-        y = frame_h - logo_h - padding
-    elif position == 'bottom-left':
-        x = padding
-        y = frame_h - logo_h - padding
-    else:
-        raise ValueError("Unsupported position. Use 'top-right', 'top-left', 'bottom-right', or 'bottom-left'.")
-
-    roi = frame[y:y+logo_h, x:x+logo_w]
-    logo_alpha = logo_img[:, :, 3] / 255.0
-    for c in range(3):
-        roi[:, :, c] = (1 - logo_alpha) * roi[:, :, c] + logo_alpha * logo_img[:, :, c]
-
-    frame[y:y+logo_h, x:x+logo_w] = roi
-    return frame
-
-def apply_masked_overlay(frame, masks, overlay_img):
-    result_frame = frame.copy()
-
-    if overlay_img is None:
-        return result_frame
-
-    for mask in masks:
-        if not mask.any():
-            continue
-
-        y_indices, x_indices = np.where(mask)
-        if len(y_indices) == 0 or len(x_indices) == 0:
-            continue
-
-        y_min, y_max = np.min(y_indices), np.max(y_indices)
-        x_min, x_max = np.min(x_indices), np.max(x_indices)
-        mask_height = y_max - y_min + 1
-        mask_width = x_max - x_min + 1
-
-        resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
-
-        current_mask = mask[y_min:y_max+1, x_min:x_max+1]
-
-        overlay_color = resized_overlay[:, :, :3]
-        overlay_alpha = resized_overlay[:, :, 3] / 255.0
-        overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
-        current_mask = np.expand_dims(current_mask, axis=2)
-
-        region = result_frame[y_min:y_max+1, x_min:x_max+1]
-        blended = region * (1 - (overlay_alpha * current_mask)) + \
-                 overlay_color * (overlay_alpha * current_mask)
-
-        result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
-
-    return result_frame
-
-def load_and_prepare_image(image_path, required_format="RGBA"):
-    if not os.path.exists(image_path):
-        app.logger.error(f"Image file not found: {image_path}.")
-        raise ValueError(f"Image file not found: {image_path}")
-
-    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-    if image is None:
-        app.logger.error(f"Failed to load image: {image_path}.")
-        raise ValueError(f"Failed to load image: {image_path}")
-
-    if len(image.shape) == 2:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-
-    if required_format == "RGBA":
-        if len(image.shape) == 3 and image.shape[2] == 3:
-            alpha_channel = np.ones(image.shape[:2], dtype=image.dtype) * 255
-            image = cv2.merge([image, alpha_channel])
-        elif len(image.shape) != 3 or image.shape[2] != 4:
-            app.logger.error("Image is not in RGB or RGBA format!")
-            raise ValueError(f"Image must be in RGB or RGBA format. Current shape: {image.shape}")
-
-    return image
+# pretrained Hugging Face model
+model_str = "facebook/sam2-hiera-base-plus" if torch.cuda.is_available() else "facebook/sam2-hiera-tiny"
+predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 
 def get_path_from_presignedurl(key) -> str:
         url = f"http://localhost:8080/presigned-get-url?key={key}"
@@ -177,6 +95,95 @@ def download_and_extract_zip(zip_url, temp_dir):
     app.logger.info("Zip extracted sucessfully")
 
     return extract_dir
+
+def load_and_prepare_image(image_path, required_format="RGBA"):
+    if not os.path.exists(image_path):
+        app.logger.error(f"Image file not found: {image_path}.")
+        raise ValueError(f"Image file not found: {image_path}")
+
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    if image is None:
+        app.logger.error(f"Failed to load image: {image_path}.")
+        raise ValueError(f"Failed to load image: {image_path}")
+
+    if len(image.shape) == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+    if required_format == "RGBA":
+        if len(image.shape) == 3 and image.shape[2] == 3:
+            alpha_channel = np.ones(image.shape[:2], dtype=image.dtype) * 255
+            image = cv2.merge([image, alpha_channel])
+        elif len(image.shape) != 3 or image.shape[2] != 4:
+            app.logger.error("Image is not in RGB or RGBA format!")
+            raise ValueError(f"Image must be in RGB or RGBA format. Current shape: {image.shape}")
+
+    return image
+
+def apply_image_to_segmentation(frame, masks, overlay_img):
+    result_frame = frame.copy()
+
+    if overlay_img is None:
+        return result_frame
+
+    for mask in masks:
+        if not mask.any():
+            continue
+
+        y_indices, x_indices = np.where(mask)
+        if len(y_indices) == 0 or len(x_indices) == 0:
+            continue
+
+        y_min, y_max = np.min(y_indices), np.max(y_indices)
+        x_min, x_max = np.min(x_indices), np.max(x_indices)
+        mask_height = y_max - y_min + 1
+        mask_width = x_max - x_min + 1
+
+        resized_overlay = cv2.resize(overlay_img, (mask_width, mask_height))
+
+        current_mask = mask[y_min:y_max+1, x_min:x_max+1]
+
+        overlay_color = resized_overlay[:, :, :3]
+        overlay_alpha = resized_overlay[:, :, 3] / 255.0
+        overlay_alpha = np.expand_dims(overlay_alpha, axis=2)
+        current_mask = np.expand_dims(current_mask, axis=2)
+
+        region = result_frame[y_min:y_max+1, x_min:x_max+1]
+        blended = region * (1 - (overlay_alpha * current_mask)) + \
+                 overlay_color * (overlay_alpha * current_mask)
+
+        result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
+
+    return result_frame
+
+def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
+    if logo_img is None:
+        return frame
+
+    frame_h, frame_w = frame.shape[:2]
+    logo_h, logo_w = logo_img.shape[:2]
+
+    if position == 'top-right':
+        x = frame_w - logo_w - padding
+        y = padding
+    elif position == 'top-left':
+        x = padding
+        y = padding
+    elif position == 'bottom-right':
+        x = frame_w - logo_w - padding
+        y = frame_h - logo_h - padding
+    elif position == 'bottom-left':
+        x = padding
+        y = frame_h - logo_h - padding
+    else:
+        raise ValueError("Unsupported position. Use 'top-right', 'top-left', 'bottom-right', or 'bottom-left'.")
+
+    roi = frame[y:y+logo_h, x:x+logo_w]
+    logo_alpha = logo_img[:, :, 3] / 255.0
+    for c in range(3):
+        roi[:, :, c] = (1 - logo_alpha) * roi[:, :, c] + logo_alpha * logo_img[:, :, c]
+
+    frame[y:y+logo_h, x:x+logo_w] = roi
+    return frame
 
 def reencode_audio_in_video(temp_dir, local_video_path):
     input_video = temp_dir + "/video_result.mp4"
@@ -250,19 +257,17 @@ def predict_frames():
             local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
 
             # prepare overlay img and logo img
-            mask_opacity = 0
             overlay_img_file = request.files.get("image")
-            if overlay_img_file:
-                file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+            if not overlay_img_file:
+                app.logger.exception("Overlay image file not found!")
+                raise ValueError("Overlay image file not found!")
 
-                overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
-
-                if overlay_img is not None and overlay_img.shape[-1] != 4:
-                    b, g, r = cv2.split(overlay_img)[:3]
-                    alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
-                    overlay_img = cv2.merge((b, g, r, alpha))
-            else:
-                mask_opacity = 0.5
+            file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+            overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
+            if overlay_img is not None and overlay_img.shape[-1] != 4:
+                b, g, r = cv2.split(overlay_img)[:3]
+                alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
+                overlay_img = cv2.merge((b, g, r, alpha))
 
             logo_img = None
             logo_img_name = "vvvdeo-logo.png"
@@ -270,6 +275,8 @@ def predict_frames():
                 logo_img = load_and_prepare_image(f"./{logo_img_name}")
                 app.logger.info("Logo image loaded and prepared.")
 
+            #device_str = "cuda" if torch.cuda.is_available() else "cpu"
+            #with torch.inference_mode(), torch.autocast(device_str, dtype=torch.bfloat16):
             # inference the initial state
             inference_state = predictor.init_state(video_path=local_frames_path)
             predictor.reset_state(inference_state)
@@ -290,10 +297,10 @@ def predict_frames():
 
             points = segmentation_data_json.get("coordinates", [])
             labels = segmentation_data_json.get("labels", [])
-
             if not points:
                 app.logger.error("Missing coordinates!")
                 return jsonify({"error": "Missing coordinates"}), 400
+
             try:
                 points = np.array([[p['x'], p['y']] for p in points], dtype=np.float32)
                 labels = np.array([l for l in labels], dtype=np.int32)
@@ -301,13 +308,12 @@ def predict_frames():
                 app.logger.exception("Error processing points")
                 return jsonify({"error": f"Error processing points: {str(e)}"}), 500
 
-            # add points to ann_frame_idx frame
-            ann_frame_idx = 0
-            ann_obj_id = 1
-            _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(
+            # add points used for the segment prediction
+            segmentation_starting_frame_idx = 0
+            _, _, _ = predictor.add_new_points_or_box(
                 inference_state=inference_state,
-                frame_idx=ann_frame_idx,
-                obj_id=ann_obj_id,
+                frame_idx=segmentation_starting_frame_idx,
+                obj_id=1,
                 points=points,
                 labels=labels,
             )
@@ -315,13 +321,6 @@ def predict_frames():
             frames_paths = sorted(sv.list_files_with_extensions(
                 directory=local_frames_path,
                 extensions=["jpg"]))
-
-            colors = ['#FF1493', '#00BFFF', '#FF6347', '#FFD700']
-            mask_annotator = sv.MaskAnnotator(
-                color=sv.ColorPalette.from_hex(colors),
-                color_lookup=sv.ColorLookup.TRACK,
-                opacity=mask_opacity
-            )
 
             # propagate the mask to all the frames and sink them into one video
             app.logger.info("Video propagation and sinking starting...")
@@ -331,31 +330,29 @@ def predict_frames():
                         app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
                         continue
 
+                    # read the frame
                     frame = cv2.imread(frames_paths[frame_idx])
                     if frame is None:
                         app.logger.warning("Frame processed is 'None'")
                         continue
 
+                    # convert mask_logits (result tensors from inference) into masks (binary mask, 1 foreground or 0 background)
                     masks = (mask_logits > 0.0).cpu().numpy()
+
+                    # optimize the masks by reshaping them for subsequent processing
                     N, X, H, W = masks.shape
                     masks = masks.reshape(N * X, H, W)
 
-                    detections = sv.Detections(
-                        xyxy=sv.mask_to_xyxy(masks=masks),
-                        mask=masks,
-                        tracker_id=np.array(object_ids)
-                    )
+                    # apply selected image into the segment by using image manipulation magic
+                    frame_with_image = apply_image_to_segmentation(frame, masks, overlay_img)
+                    final_frame_with_logo = add_logo_to_frame(frame_with_image, logo_img, position='top-right')
 
-                    result_frame = apply_masked_overlay(frame, masks, overlay_img)
-                    final_frame = mask_annotator.annotate(result_frame, detections)
-                    final_frame_with_logo = add_logo_to_frame(final_frame, logo_img, position='top-right')
-
+                    # combine the frame with the others frames to create the final modified video
                     sink.write_frame(final_frame_with_logo)
 
-            app.logger.info("Video propagation successful.")
+                app.logger.info("Video propagation successful.")
 
             output_video = reencode_audio_in_video(temp_dir, local_video_path)
-
             # send the video to the frontend for download
             try:
                 return send_file(
