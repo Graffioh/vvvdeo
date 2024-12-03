@@ -191,9 +191,10 @@ document.addEventListener("DOMContentLoaded", () => {
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
-    localStorage.removeItem("videoKey");
 
     if (videoFile) {
+      localStorage.removeItem("videoKey");
+      videoInputUpload.disabled = true;
       const videoURL = URL.createObjectURL(videoFile);
 
       // 10 seconds length check
@@ -230,6 +231,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   inferenceVideoButtonElement.addEventListener("click", async () => {
     const imageFile = imageInput.files[0];
+
+    if (!imageFile) {
+      alert("Please select an image.");
+      return;
+    }
+
+    if (coordinates.length === 0) {
+      alert("Please add points for segmentation.");
+      return;
+    }
+
     const formData = new FormData();
 
     formData.append("image", imageFile);
@@ -273,6 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
       addNegativeLabelButton.disabled = false;
       imageInput.disabled = false;
       videoInputUpload.disabled = false;
+      localStorage.removeItem("videoKey");
 
       // download video directly in the browser after inference
       const blob = await response.blob();
