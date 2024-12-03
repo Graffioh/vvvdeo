@@ -74,14 +74,24 @@ func extractFrames(videoPath, framesDir string) error {
 			fmt.Sprintf("%s/%%05d.jpg", framesDir),
 		)
 	} else {
-		// select a frame every 5 so the development workflow is faster when inferencing
+		// select a frame every n so the development workflow is faster when inferencing
+		n_of_jumped_frames := "select='not(mod(n, 5))'"
 		cmd = exec.Command("ffmpeg",
 			"-i", videoPath,
-			"-vf", "select='not(mod(n, 5))'",
+			"-vf", n_of_jumped_frames,
 			"-vsync", "vfr",
 			"-q:v", "2",
 			fmt.Sprintf("%s/%%05d.jpg", framesDir),
 		)
+
+		/*
+			cmd = exec.Command("ffmpeg",
+				"-i", videoPath,
+				"-q:v", "2",
+				"-start_number", "0",
+				fmt.Sprintf("%s/%%05d.jpg", framesDir),
+			)
+		*/
 	}
 
 	output, err := cmd.CombinedOutput()

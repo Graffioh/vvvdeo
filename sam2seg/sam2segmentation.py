@@ -119,6 +119,30 @@ def load_and_prepare_image(image_path, required_format="RGBA"):
 
     return image
 
+def prepare_overlay_img(overlay_img_file):
+    if not overlay_img_file:
+        app.logger.exception("Overlay image file not found!")
+        raise ValueError("Overlay image file not found!")
+
+    file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+    overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
+    if overlay_img is not None and overlay_img.shape[-1] != 4:
+        b, g, r = cv2.split(overlay_img)[:3]
+        alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
+        overlay_img = cv2.merge((b, g, r, alpha))
+
+    return overlay_img
+
+def prepare_logo_img():
+    logo_img = None
+    logo_img_name = "vvvdeo-logo.png"
+    if logo_img_name:
+        logo_img = load_and_prepare_image(f"./{logo_img_name}")
+        app.logger.info("Logo image loaded and prepared.")
+
+    return logo_img
+
+
 def apply_image_to_segmentation(frame, masks, overlay_img):
     result_frame = frame.copy()
 
@@ -225,9 +249,35 @@ def reencode_audio_in_video(temp_dir, local_video_path):
 
     return output_video
 
+def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img):
+    with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
+        for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
+            if not os.path.exists(frames_paths[frame_idx]):
+                app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
+                continue
 
-@app.route("/predict-frames", methods=["POST"])
-def predict_frames():
+            # read the frame
+            frame = cv2.imread(frames_paths[frame_idx])
+            if frame is None:
+                app.logger.warning("Frame processed is 'None'")
+                continue
+
+            # convert mask_logits (result tensors from inference) into masks (binary mask, 1 foreground or 0 background)
+            masks = (mask_logits > 0.0).cpu().numpy()
+
+            # optimize the masks by reshaping them for subsequent processing
+            N, X, H, W = masks.shape
+            masks = masks.reshape(N * X, H, W)
+
+            # apply selected image into the segment by using image manipulation magic
+            frame_with_image = apply_image_to_segmentation(frame, masks, overlay_img)
+            final_frame_with_logo = add_logo_to_frame(frame_with_image, logo_img, position='top-right')
+
+            # combine the frame with the others frames to create the final modified video
+            sink.write_frame(final_frame_with_logo)
+
+@app.route("/segment", methods=["POST"])
+def segment():
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             app.logger.debug("Temp directory created: %s", temp_dir)
@@ -255,25 +305,6 @@ def predict_frames():
 
             cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
             local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
-
-            # prepare overlay img and logo img
-            overlay_img_file = request.files.get("image")
-            if not overlay_img_file:
-                app.logger.exception("Overlay image file not found!")
-                raise ValueError("Overlay image file not found!")
-
-            file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
-            overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
-            if overlay_img is not None and overlay_img.shape[-1] != 4:
-                b, g, r = cv2.split(overlay_img)[:3]
-                alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
-                overlay_img = cv2.merge((b, g, r, alpha))
-
-            logo_img = None
-            logo_img_name = "vvvdeo-logo.png"
-            if logo_img_name:
-                logo_img = load_and_prepare_image(f"./{logo_img_name}")
-                app.logger.info("Logo image loaded and prepared.")
 
             #device_str = "cuda" if torch.cuda.is_available() else "cpu"
             #with torch.inference_mode(), torch.autocast(device_str, dtype=torch.bfloat16):
@@ -322,37 +353,17 @@ def predict_frames():
                 directory=local_frames_path,
                 extensions=["jpg"]))
 
+            overlay_img_file = request.files.get("image")
+            overlay_img = prepare_overlay_img(overlay_img_file)
+            logo_img = prepare_logo_img()
+
             # propagate the mask to all the frames and sink them into one video
             app.logger.info("Video propagation and sinking starting...")
-            with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
-                for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
-                    if not os.path.exists(frames_paths[frame_idx]):
-                        app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
-                        continue
-
-                    # read the frame
-                    frame = cv2.imread(frames_paths[frame_idx])
-                    if frame is None:
-                        app.logger.warning("Frame processed is 'None'")
-                        continue
-
-                    # convert mask_logits (result tensors from inference) into masks (binary mask, 1 foreground or 0 background)
-                    masks = (mask_logits > 0.0).cpu().numpy()
-
-                    # optimize the masks by reshaping them for subsequent processing
-                    N, X, H, W = masks.shape
-                    masks = masks.reshape(N * X, H, W)
-
-                    # apply selected image into the segment by using image manipulation magic
-                    frame_with_image = apply_image_to_segmentation(frame, masks, overlay_img)
-                    final_frame_with_logo = add_logo_to_frame(frame_with_image, logo_img, position='top-right')
-
-                    # combine the frame with the others frames to create the final modified video
-                    sink.write_frame(final_frame_with_logo)
-
-                app.logger.info("Video propagation successful.")
+            propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img)
+            app.logger.info("Video propagation successful.")
 
             output_video = reencode_audio_in_video(temp_dir, local_video_path)
+
             # send the video to the frontend for download
             try:
                 return send_file(

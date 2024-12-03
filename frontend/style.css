@@ -1,3 +1,10 @@
+main {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1000px; /* Adjust to your preferred width */
+    padding: 0 20px; /* Optional: add some padding for spacing */
+}
+
 body {
     font-family: "Roboto", sans-serif;
     margin: 0;
@@ -102,9 +109,6 @@ video {
 
 .images-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
-    margin-top: 20px;
 }
 
 .images-grid img {
@@ -128,6 +132,7 @@ video {
     height: 100px;
     font-weight: bold;
     font-size: 20px;
+    margin-top: 18px;
 }
 
 .spinner {

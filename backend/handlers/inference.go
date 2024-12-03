@@ -84,7 +84,7 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	writer.Close()
 
-	pythonURL := "http://localhost:9000/predict-frames"
+	pythonURL := "http://localhost:9000/segment"
 	req, err := http.NewRequest("POST", pythonURL, body)
 	if err != nil {
 		http.Error(w, "Error creating Python server request", http.StatusInternalServerError)

@@ -194,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (videoFile) {
       localStorage.removeItem("videoKey");
-      videoInputUpload.disabled = true;
       const videoURL = URL.createObjectURL(videoFile);
 
       // 10 seconds length check

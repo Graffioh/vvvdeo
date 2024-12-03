@@ -17,18 +17,24 @@
         <h1>vvvdeo</h1>
     </header>
     <main>
-        <h3>Pick a video</h3>
-        <p id="video-length-msg">(max video length: 10 seconds)</p>
-        <form enctype="multipart/form-data">
-            <input id="input-video" type="file" name="video" accept="video/mp4">
-        </form>
-        <h3>Pick an image</h3>
-        <div class="images-grid">
-            <form enctype="multipart/form-data">
-                <input id="input-img" type="file" name="image" accept="image/*">
-                <br></br>
-            </form>
-            <img id="img-preview" class="preview">
+        <div id="pickers-div">
+            <div class="input-div">
+                <h3>Pick a video</h3>
+                <p id="video-length-msg">(max video length: 10 seconds)</p>
+                <form enctype="multipart/form-data">
+                    <input id="input-video" type="file" name="video" accept="video/mp4">
+                </form>
+            </div>
+            <div class="input-div">
+                <h3>Pick an image</h3>
+                <form enctype="multipart/form-data">
+                    <input id="input-img" type="file" name="image" accept="image/*">
+                    <br></br>
+                </form>
+            </div>
+            <div class="images-grid">
+                <img id="img-preview" class="preview">
+            </div>
         </div>
         <div hidden id="video-inference-container">
             <div class="video-container">
