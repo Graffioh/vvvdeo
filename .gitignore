@@ -12,6 +12,9 @@ sam2seg/static
 sam2seg/img
 sam2seg/vid
 sam2seg/app.log
+sam2seg/.dockerignore
+sam2seg/configs
+sam2seg/__pycache__
 
 .ropeproject/
 

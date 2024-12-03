@@ -5,8 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // VIDEO SEGMENTATION
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   const videoPlayer = document.getElementById("video-player");
-  const coordinates = [];
-  const labels = [];
+  let coordinates = [];
+  let labels = [];
   const shapesContainer = document.getElementById("shapes-container");
 
   const addPositiveLabelButton = document.getElementById("seg-add");
@@ -154,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (message.status === "completed") {
           videoPreviewMessage.hidden = true;
-          localStorage.removeItem("videoKey");
           videoInferenceContainer.hidden = false;
           await displayVideo(message.videoKey);
           inferenceVideoButtonElement.disabled = false;
@@ -192,6 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
   videoInputUpload.addEventListener("change", async (event) => {
     event.preventDefault();
     const videoFile = videoInputUpload.files[0];
+    localStorage.removeItem("videoKey");
 
     if (videoFile) {
       const videoURL = URL.createObjectURL(videoFile);
@@ -212,7 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        videoInputUpload.disabled = true;
         videoInferenceContainer.hidden = false;
         // show video in the video player
         videoPlayer.src = videoURL;
@@ -249,6 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addPositiveLabelButton.disabled = true;
     addNegativeLabelButton.disabled = true;
     imageInput.disabled = true;
+    videoInputUpload.disabled = true;
 
     try {
       const response = await fetch(backendUrl + "/inference-video", {
@@ -272,6 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
       addPositiveLabelButton.disabled = false;
       addNegativeLabelButton.disabled = false;
       imageInput.disabled = false;
+      videoInputUpload.disabled = false;
 
       // download video directly in the browser after inference
       const blob = await response.blob();
