@@ -200,11 +200,22 @@ video {
     z-index: 1;
 }
 
-#video-inference-container {
+#inference-container {
     margin-top: 14px;
 }
 
 #btn-labels-container {
     display: flex;
     gap: 4px;
+}
+
+#inputs-trim {
+    display: none;
+    gap: 20px;
+}
+
+#trim-button {
+    width: 65px;
+    height: 40px;
+    margin-top: 35px;
 }

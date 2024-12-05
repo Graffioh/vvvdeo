@@ -14,5 +14,9 @@
   "description": "",
   "devDependencies": {
     "vite": "^6.0.1"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1"
   }
 }

@@ -1,7 +1,14 @@
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const backendWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
 
 document.addEventListener("DOMContentLoaded", () => {
+  const inferenceVideoButtonElement = document.getElementById(
+    "inference-video-btn",
+  );
+
   // VIDEO SEGMENTATION
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   const videoPlayer = document.getElementById("video-player");
@@ -94,14 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const inferenceVideoButtonElement = document.getElementById(
-    "inference-video-btn",
-  );
-
   // VIDEO UPLOAD + WEBSOCKET CONNECTION
   //
   const videoInferenceContainer = document.getElementById(
-    "video-inference-container",
+    "inference-container",
   );
   const videoInputUpload = document.getElementById("input-video");
 
@@ -186,42 +189,116 @@ document.addEventListener("DOMContentLoaded", () => {
     await connectToWebSocket(videoKey);
   }
 
-  const videoPreviewMessage = document.getElementById("video-preview-msg");
-
-  videoInputUpload.addEventListener("change", async (event) => {
-    event.preventDefault();
-    const videoFile = videoInputUpload.files[0];
-
-    if (videoFile) {
-      localStorage.removeItem("videoKey");
-      const videoURL = URL.createObjectURL(videoFile);
-
-      // 10 seconds length check
-      const tempVideo = document.createElement("video");
-      tempVideo.src = videoURL;
-      tempVideo.addEventListener("loadedmetadata", () => {
-        const videoDuration = tempVideo.duration;
-
-        if (videoDuration > 10) {
-          alert(
-            "Video is longer than 10 seconds. Please select a shorter video.",
-          );
-          URL.revokeObjectURL(videoURL);
-
-          videoInputUpload.value = "";
-          return;
-        }
-
-        videoInferenceContainer.hidden = false;
-        // show video in the video player
-        videoPlayer.src = videoURL;
-        videoPlayer.style.display = "block";
-        videoPreviewMessage.hidden = false;
-
-        uploadVideoAndConnectToWebsocket(videoFile);
+  // ffmpeg wasm trimming
+  let ffmpeg = null;
+  const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  const trim = async (file, startTrim, endTrim) => {
+    const trimMessage = document.getElementById("trim-message");
+    if (ffmpeg === null) {
+      ffmpeg = new FFmpeg();
+      ffmpeg.on("log", ({ message }) => {
+        console.log(trimMessage);
+      });
+      ffmpeg.on("progress", ({ progress }) => {
+        trimMessage.innerHTML = `${progress * 100} %`;
+      });
+      await ffmpeg.load({
+        coreURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.js`,
+          "text/javascript",
+        ),
+        wasmURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.wasm`,
+          "application/wasm",
+        ),
       });
     }
+    const { name } = file;
+    await ffmpeg.writeFile(name, await fetchFile(file));
+    trimMessage.innerHTML = "Start trimming";
+    await ffmpeg.exec([
+      "-i",
+      name,
+      "-ss",
+      startTrim,
+      "-to",
+      endTrim,
+      "-c:v",
+      "copy",
+      "output.mp4",
+    ]);
+    trimMessage.innerHTML = "Complete trimming";
+    const data = await ffmpeg.readFile("output.mp4");
+
+    videoPlayer.style.display = "block";
+    videoPlayer.src = URL.createObjectURL(
+      new Blob([data.buffer], { type: "video/mp4" }),
+    );
+  };
+
+  const videoPreviewMessage = document.getElementById("video-preview-msg");
+  const trimInputs = document.getElementById("inputs-trim");
+  const trimButton = document.getElementById("trim-button");
+
+  videoInputUpload.addEventListener("change", () => {
+    const videoFile = videoInputUpload.files[0];
+    const videoURL = URL.createObjectURL(videoFile);
+
+    videoPlayer.src = videoURL;
+    videoPlayer.style.display = "block";
+    trimInputs.style.display = "flex";
   });
+
+  trimButton.addEventListener("click", async () => {
+    const startTrimInput = document.getElementById("start-trim-input");
+    const endTrimInput = document.getElementById("end-trim-input");
+    const startTrimValue = startTrimInput.value;
+    const endTrimValue = endTrimInput.value;
+
+    const videoFile = videoInputUpload.files[0];
+    await trim(videoFile, startTrimValue, endTrimValue);
+  });
+
+  //  videoInputUpload.addEventListener("change", async (event) => {
+  //    event.preventDefault();
+  //    const videoFile = videoInputUpload.files[0];
+  //
+  //    if (videoFile) {
+  //      localStorage.removeItem("videoKey");
+  //      const videoURL = URL.createObjectURL(videoFile);
+  //
+  //      videoPlayer.src = videoURL;
+  //      videoPlayer.style.display = "block";
+  //
+  //      // show cut inputs
+  //      videoCutContainer.hidden = false;
+  //
+  //      // 10 seconds length check
+  //      //  const tempVideo = document.createElement("video");
+  //      //  tempVideo.src = videoURL;
+  //      //  tempVideo.addEventListener("loadedmetadata", () => {
+  //      //    const videoDuration = tempVideo.duration;
+  //
+  //      //    if (videoDuration > 10) {
+  //      //      alert(
+  //      //        "Video is longer than 10 seconds. Please select a shorter video.",
+  //      //      );
+  //      //      URL.revokeObjectURL(videoURL);
+  //
+  //      //      videoInputUpload.value = "";
+  //      //      return;
+  //      //    }
+  //
+  //      //    videoInferenceContainer.hidden = false;
+  //      //    // show video for inference in the video player
+  //      //    videoPlayer.src = videoURL;
+  //      //    videoPlayer.style.display = "block";
+  //      //    videoPreviewMessage.hidden = false;
+  //
+  //      //uploadVideoAndConnectToWebsocket(videoFile);
+  //      //  });
+  //    }
+  //  });
 
   // INFERENCE
   //

@@ -36,14 +36,26 @@
                 <img id="img-preview" class="preview">
             </div>
         </div>
-        <div hidden id="video-inference-container">
-            <div class="video-container">
-                <video id="video-player" controls width="1080"></video>
-                <div hidden id="video-preview-msg">
-                        Video preview, the video is processing...
-                    </div>
-                <div id="shapes-container"></div>
+        <div class="video-container">
+            <video id="video-player" controls width="1080"></video>
+            <div hidden id="video-preview-msg">
+                    Video preview, the video is processing...
+                </div>
+            <div id="shapes-container"></div>
+        </div>
+        <p id="trim-message"></p>
+        <div id="inputs-trim">
+            <div id="start-trim-container">
+                <p>Start</p>
+                <input id="start-trim-input" type="time" step="1">
             </div>
+            <div id="end-trim-container">
+                <p>End</p>
+                <input id="end-trim-input" type="time" step="1">
+            </div>
+            <button id="trim-button">Trim</button>
+        </div>
+        <div hidden id="inference-container">
             <div id="btn-labels-container">
                 <button disabled id="seg-add">Add area</button>
                 <button disabled id="seg-excl">Exclude area</button>
