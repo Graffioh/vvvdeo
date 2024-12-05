@@ -258,9 +258,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return hours * 3600 + minutes * 60 + seconds;
   }
 
+  function secondsToTime(seconds) {
+    const hrs = Math.floor(seconds / 3600)
+      .toString()
+      .padStart(2, "0");
+    const mins = Math.floor((seconds % 3600) / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = Math.floor(seconds % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${hrs}:${mins}:${secs}`;
+  }
+
+  const startTrimInput = document.getElementById("start-trim-input");
+  const endTrimInput = document.getElementById("end-trim-input");
+
+  const startTrimBtn = document.getElementById("start-trim-btn");
+  const endTrimBtn = document.getElementById("end-trim-btn");
+  startTrimBtn.addEventListener("click", () => {
+    startTrimInput.value = secondsToTime(videoPlayer.currentTime);
+  });
+
+  endTrimBtn.addEventListener("click", () => {
+    endTrimInput.value = secondsToTime(videoPlayer.currentTime);
+  });
+
   trimButton.addEventListener("click", async () => {
-    const startTrimInput = document.getElementById("start-trim-input");
-    const endTrimInput = document.getElementById("end-trim-input");
     const startTrimValue = startTrimInput.value;
     const endTrimValue = endTrimInput.value;
 
@@ -275,9 +299,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const videoFile = videoInputUpload.files[0];
     await trim(videoFile, startTrimValue, endTrimValue);
 
-    trimInputsContainer.style.display = "none";
-    videoInferenceContainer.style.display = "block";
-    uploadVideoAndConnectToWebsocket(trimmedVideoFile);
+    // trimInputsContainer.style.display = "none";
+    // videoInferenceContainer.style.display = "block";
+    // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
   });
 
   // INFERENCE

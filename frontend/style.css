@@ -219,7 +219,7 @@ video {
 #trim-button {
     width: 65px;
     height: 40px;
-    margin-top: 35px;
+    align-self: flex-end;
 }
 
 #trim-container {
