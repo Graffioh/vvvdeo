@@ -135,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
     connToWs();
   }
 
+  const videoPreviewMessage = document.getElementById("video-preview-msg");
   // connect to websocket for event-driven workflow
   async function connectToWebSocket(videoKey) {
     return new Promise((resolve, reject) => {
@@ -168,6 +169,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function uploadVideoAndConnectToWebsocket(videoFile) {
+    videoPreviewMessage.hidden = false;
+
     // upload video to r2 bucket with presigned url
     const presignedPutUrl = backendUrl + "/presigned-put-url";
     const presignedPutResponse = await fetch(presignedPutUrl, {
@@ -190,17 +193,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ffmpeg wasm trimming
+  let trimmedVideoFile = null;
   let ffmpeg = null;
   const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
   const trim = async (file, startTrim, endTrim) => {
-    const trimMessage = document.getElementById("trim-message");
+    const ffmpegMessage = document.getElementById("ffmpeg-message");
     if (ffmpeg === null) {
       ffmpeg = new FFmpeg();
       ffmpeg.on("log", ({ message }) => {
-        console.log(trimMessage);
+        console.log(message);
       });
       ffmpeg.on("progress", ({ progress }) => {
-        trimMessage.innerHTML = `${progress * 100} %`;
+        ffmpegMessage.innerHTML = `${progress * 100} %`;
       });
       await ffmpeg.load({
         coreURL: await toBlobURL(
@@ -213,31 +217,31 @@ document.addEventListener("DOMContentLoaded", () => {
         ),
       });
     }
+
     const { name } = file;
     await ffmpeg.writeFile(name, await fetchFile(file));
-    trimMessage.innerHTML = "Start trimming";
+    ffmpegMessage.innerHTML = "Start trimming...";
     await ffmpeg.exec([
-      "-i",
-      name,
       "-ss",
       startTrim,
       "-to",
       endTrim,
+      "-i",
+      name,
       "-c:v",
       "copy",
       "output.mp4",
     ]);
-    trimMessage.innerHTML = "Complete trimming";
     const data = await ffmpeg.readFile("output.mp4");
+    trimmedVideoFile = new Blob([data.buffer], { type: "video/mp4" });
 
     videoPlayer.style.display = "block";
-    videoPlayer.src = URL.createObjectURL(
-      new Blob([data.buffer], { type: "video/mp4" }),
-    );
+    videoPlayer.src = URL.createObjectURL(trimmedVideoFile);
+    ffmpegMessage.hidden = true;
   };
 
-  const videoPreviewMessage = document.getElementById("video-preview-msg");
   const trimInputs = document.getElementById("inputs-trim");
+  const trimInputsContainer = document.getElementById("trim-container");
   const trimButton = document.getElementById("trim-button");
 
   videoInputUpload.addEventListener("change", () => {
@@ -246,8 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     videoPlayer.src = videoURL;
     videoPlayer.style.display = "block";
-    trimInputs.style.display = "flex";
+    trimInputsContainer.style.display = "flex";
   });
+
+  function timeToSeconds(time) {
+    const [hours, minutes, seconds] = time.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
 
   trimButton.addEventListener("click", async () => {
     const startTrimInput = document.getElementById("start-trim-input");
@@ -255,50 +264,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const startTrimValue = startTrimInput.value;
     const endTrimValue = endTrimInput.value;
 
+    const startTrimSeconds = timeToSeconds(startTrimValue);
+    const endTrimSeconds = timeToSeconds(endTrimValue);
+
+    if (endTrimSeconds - startTrimSeconds > 10) {
+      alert("Video needs to be maximum 10 seconds long.");
+      return;
+    }
+
     const videoFile = videoInputUpload.files[0];
     await trim(videoFile, startTrimValue, endTrimValue);
-  });
 
-  //  videoInputUpload.addEventListener("change", async (event) => {
-  //    event.preventDefault();
-  //    const videoFile = videoInputUpload.files[0];
-  //
-  //    if (videoFile) {
-  //      localStorage.removeItem("videoKey");
-  //      const videoURL = URL.createObjectURL(videoFile);
-  //
-  //      videoPlayer.src = videoURL;
-  //      videoPlayer.style.display = "block";
-  //
-  //      // show cut inputs
-  //      videoCutContainer.hidden = false;
-  //
-  //      // 10 seconds length check
-  //      //  const tempVideo = document.createElement("video");
-  //      //  tempVideo.src = videoURL;
-  //      //  tempVideo.addEventListener("loadedmetadata", () => {
-  //      //    const videoDuration = tempVideo.duration;
-  //
-  //      //    if (videoDuration > 10) {
-  //      //      alert(
-  //      //        "Video is longer than 10 seconds. Please select a shorter video.",
-  //      //      );
-  //      //      URL.revokeObjectURL(videoURL);
-  //
-  //      //      videoInputUpload.value = "";
-  //      //      return;
-  //      //    }
-  //
-  //      //    videoInferenceContainer.hidden = false;
-  //      //    // show video for inference in the video player
-  //      //    videoPlayer.src = videoURL;
-  //      //    videoPlayer.style.display = "block";
-  //      //    videoPreviewMessage.hidden = false;
-  //
-  //      //uploadVideoAndConnectToWebsocket(videoFile);
-  //      //  });
-  //    }
-  //  });
+    trimInputsContainer.style.display = "none";
+    videoInferenceContainer.style.display = "block";
+    uploadVideoAndConnectToWebsocket(trimmedVideoFile);
+  });
 
   // INFERENCE
   //

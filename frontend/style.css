@@ -109,6 +109,7 @@ video {
 
 .images-grid {
     display: grid;
+    margin-bottom: 16px;
 }
 
 .images-grid img {
@@ -182,7 +183,7 @@ video {
 
 #video-length-msg {
     color: #6c757d;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 #video-preview-msg {
@@ -201,6 +202,7 @@ video {
 }
 
 #inference-container {
+    display: none;
     margin-top: 14px;
 }
 
@@ -210,7 +212,7 @@ video {
 }
 
 #inputs-trim {
-    display: none;
+    display: flex;
     gap: 20px;
 }
 
@@ -218,4 +220,9 @@ video {
     width: 65px;
     height: 40px;
     margin-top: 35px;
+}
+
+#trim-container {
+    display: none;
+    flex-direction: column;
 }

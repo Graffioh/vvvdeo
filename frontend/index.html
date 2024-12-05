@@ -20,7 +20,6 @@
         <div id="pickers-div">
             <div class="input-div">
                 <h3>Pick a video</h3>
-                <p id="video-length-msg">(max video length: 10 seconds)</p>
                 <form enctype="multipart/form-data">
                     <input id="input-video" type="file" name="video" accept="video/mp4">
                 </form>
@@ -39,12 +38,14 @@
         <div class="video-container">
             <video id="video-player" controls width="1080"></video>
             <div hidden id="video-preview-msg">
-                    Video preview, the video is processing...
+                    Video preview, frames are being extracted for inference...
                 </div>
             <div id="shapes-container"></div>
         </div>
-        <p id="trim-message"></p>
-        <div id="inputs-trim">
+        <p id="ffmpeg-message"></p>
+        <div id="trim-container">
+            <p id="video-length-msg">(max video length: 10 seconds)</p>
+            <div id="inputs-trim">
             <div id="start-trim-container">
                 <p>Start</p>
                 <input id="start-trim-input" type="time" step="1">
@@ -55,7 +56,8 @@
             </div>
             <button id="trim-button">Trim</button>
         </div>
-        <div hidden id="inference-container">
+        </div>
+        <div id="inference-container">
             <div id="btn-labels-container">
                 <button disabled id="seg-add">Add area</button>
                 <button disabled id="seg-excl">Exclude area</button>
