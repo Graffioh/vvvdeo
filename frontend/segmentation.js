@@ -279,8 +279,17 @@ document.addEventListener("DOMContentLoaded", () => {
   startTrimBtn.addEventListener("click", () => {
     startTrimInput.value = secondsToTime(videoPlayer.currentTime);
   });
-
   endTrimBtn.addEventListener("click", () => {
+    if (!startTrimInput.value) {
+      alert("Please select first the starting time.");
+      return;
+    }
+
+    if (videoPlayer.currentTime < timeToSeconds(startTrimInput.value)) {
+      alert("Please select a valid starting and ending time");
+      return;
+    }
+
     endTrimInput.value = secondsToTime(videoPlayer.currentTime);
   });
 
