@@ -234,8 +234,8 @@ video {
     gap: 20px;
 }
 
-#trim-button {
-    font-size: 20px;
+.trim-button {
+    font-size: 12px;
     width: 65px;
     height: 40px;
     align-self: flex-end;

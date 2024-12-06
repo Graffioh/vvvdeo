@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let trimmedVideoFile = null;
   let ffmpeg = null;
   const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-  const trim = async (file, startTrim, endTrim) => {
+  const trim = async (file, startTrim, endTrim, isFastSelected) => {
     const ffmpegMessage = document.getElementById("ffmpeg-message");
     if (ffmpeg === null) {
       ffmpeg = new FFmpeg();
@@ -221,17 +221,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const { name } = file;
     await ffmpeg.writeFile(name, await fetchFile(file));
     ffmpegMessage.innerHTML = "Start trimming...";
-    await ffmpeg.exec([
-      "-ss",
-      startTrim,
-      "-to",
-      endTrim,
-      "-i",
-      name,
-      "-c:v",
-      "copy",
-      "output.mp4",
-    ]);
+    if (isFastSelected) {
+      await ffmpeg.exec([
+        "-ss",
+        startTrim,
+        "-to",
+        endTrim,
+        "-i",
+        name,
+        "-c:v",
+        "copy",
+        "output.mp4",
+      ]);
+    } else {
+      await ffmpeg.exec([
+        "-ss",
+        startTrim,
+        "-to",
+        endTrim,
+        "-i",
+        name,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "output.mp4",
+      ]);
+    }
     const data = await ffmpeg.readFile("output.mp4");
     trimmedVideoFile = new Blob([data.buffer], { type: "video/mp4" });
 
@@ -241,7 +257,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const trimInputsContainer = document.getElementById("trim-container");
-  const trimButton = document.getElementById("trim-button");
+  const trimButtonFast = document.getElementById("trim-button-fast");
+  const trimButtonAccurate = document.getElementById("trim-button-accurate");
   const showButtonsContainer = document.getElementById("show-btns-container");
 
   videoInputUpload.addEventListener("change", () => {
@@ -275,7 +292,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const secs = Math.floor(seconds % 60)
       .toString()
       .padStart(2, "0");
-    return `${hrs}:${mins}:${secs}`;
+    const millis = Math.floor((seconds % 1) * 1000)
+      .toString()
+      .padStart(3, "0");
+    return `${hrs}:${mins}:${secs}.${millis}`;
   }
 
   const startTrimInput = document.getElementById("start-trim-input");
@@ -284,9 +304,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const startTrimBtn = document.getElementById("start-trim-btn");
   const endTrimBtn = document.getElementById("end-trim-btn");
   startTrimBtn.addEventListener("click", () => {
+    console.log(videoPlayer.currentTime);
     startTrimInput.value = secondsToTime(videoPlayer.currentTime);
   });
   endTrimBtn.addEventListener("click", () => {
+    console.log(videoPlayer.currentTime);
     if (!startTrimInput.value) {
       alert("Please select first the starting time.");
       return;
@@ -301,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     endTrimInput.value = secondsToTime(videoPlayer.currentTime);
   });
 
-  trimButton.addEventListener("click", async () => {
+  trimButtonFast.addEventListener("click", async () => {
     const startTrimValue = startTrimInput.value;
     const endTrimValue = endTrimInput.value;
 
@@ -314,7 +336,32 @@ document.addEventListener("DOMContentLoaded", () => {
     //}
 
     const videoFile = videoInputUpload.files[0];
-    await trim(videoFile, startTrimValue, endTrimValue);
+    await trim(videoFile, startTrimValue, endTrimValue, true);
+
+    console.log("GIVE ME CREDITS FOR INFERENCE");
+
+    startTrimInput.value = null;
+    endTrimInput.value = null;
+
+    // trimInputsContainer.style.display = "none";
+    // videoInferenceContainer.style.display = "block";
+    // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
+  });
+
+  trimButtonAccurate.addEventListener("click", async () => {
+    const startTrimValue = startTrimInput.value;
+    const endTrimValue = endTrimInput.value;
+
+    const startTrimSeconds = timeToSeconds(startTrimValue);
+    const endTrimSeconds = timeToSeconds(endTrimValue);
+
+    //if (endTrimSeconds - startTrimSeconds > 10) {
+    //  alert("Video needs to be maximum 10 seconds long.");
+    //  return;
+    //}
+
+    const videoFile = videoInputUpload.files[0];
+    await trim(videoFile, startTrimValue, endTrimValue, false);
 
     console.log("GIVE ME CREDITS FOR INFERENCE");
 
