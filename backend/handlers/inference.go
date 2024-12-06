@@ -113,7 +113,7 @@ func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "video/mp4")
-	w.Header().Set("Content-Disposition", "attachment; filename=processed_video.mp4")
+	w.Header().Set("Content-Disposition", "attachment; filename=crafted_vvvdeo.mp4")
 
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {

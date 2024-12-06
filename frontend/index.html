@@ -17,13 +17,41 @@
         <h1>vvvdeo</h1>
     </header>
     <main>
-        <div id="pickers-div">
-            <div class="input-div">
-                <h3>Pick a video</h3>
-                <form enctype="multipart/form-data">
-                    <input id="input-video" type="file" name="video" accept="video/mp4">
-                </form>
+        <div class="input-div">
+            <h3>Pick a video</h3>
+            <form enctype="multipart/form-data">
+                <input id="input-video" type="file" name="video" accept="video/mp4">
+            </form>
+        </div>
+        <div id="video-container">
+            <video id="video-player" controls width="1080"></video>
+            <div hidden id="video-preview-msg">
+                    Video preview, frames are being extracted for inference...
+                </div>
+            <div id="shapes-container"></div>
+        </div>
+        <div id="show-btns-container">
+            <button id="show-trim">Trim video</button>
+            <button disabled>Segment video (give me credits for gpu)</button>
+        </div>
+        <div id="trim-container">
+            <p id="ffmpeg-message"></p>
+                <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
+                <div id="inputs-trim">
+                <div id="start-trim-container">
+                    <p>Start</p>
+                    <input id="start-trim-input" type="time" step="1">
+                    <button id="start-trim-btn">⦿</button>
+                </div>
+                <div id="end-trim-container">
+                    <p>End</p>
+                    <input id="end-trim-input" type="time" step="1">
+                    <button id="end-trim-btn">⦿</button>
+                </div>
+                <button id="trim-button">✂</button>
             </div>
+        </div>
+        <div id="inference-container">
             <div class="input-div">
                 <h3>Pick an image</h3>
                 <form enctype="multipart/form-data">
@@ -34,32 +62,6 @@
             <div class="images-grid">
                 <img id="img-preview" class="preview">
             </div>
-        </div>
-        <div class="video-container">
-            <video id="video-player" controls width="1080"></video>
-            <div hidden id="video-preview-msg">
-                    Video preview, frames are being extracted for inference...
-                </div>
-            <div id="shapes-container"></div>
-        </div>
-        <p id="ffmpeg-message"></p>
-        <div id="trim-container">
-            <p id="video-length-msg">(max video length: 10 seconds)</p>
-            <div id="inputs-trim">
-            <div id="start-trim-container">
-                <p>Start</p>
-                <input id="start-trim-input" type="time" step="1">
-                <button id="start-trim-btn">⦿</button>
-            </div>
-            <div id="end-trim-container">
-                <p>End</p>
-                <input id="end-trim-input" type="time" step="1">
-                <button id="end-trim-btn">⦿</button>
-            </div>
-            <button id="trim-button">Trim</button>
-        </div>
-        </div>
-        <div id="inference-container">
             <div id="btn-labels-container">
                 <button disabled id="seg-add">Add area</button>
                 <button disabled id="seg-excl">Exclude area</button>

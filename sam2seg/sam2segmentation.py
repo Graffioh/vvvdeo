@@ -370,7 +370,7 @@ def segment():
                     output_video,
                     mimetype='video/mp4',
                     as_attachment=True,
-                    download_name='processed_video.mp4'
+                    download_name='crafted_vvvdeo.mp4'
                 )
             except Exception as e:
                 return jsonify({"error": f"Error sending file: {str(e)}"}), 500

@@ -240,9 +240,9 @@ document.addEventListener("DOMContentLoaded", () => {
     ffmpegMessage.hidden = true;
   };
 
-  const trimInputs = document.getElementById("inputs-trim");
   const trimInputsContainer = document.getElementById("trim-container");
   const trimButton = document.getElementById("trim-button");
+  const showButtonsContainer = document.getElementById("show-btns-container");
 
   videoInputUpload.addEventListener("change", () => {
     const videoFile = videoInputUpload.files[0];
@@ -250,6 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     videoPlayer.src = videoURL;
     videoPlayer.style.display = "block";
+
+    showButtonsContainer.style.display = "block";
+  });
+
+  const showTrimButton = document.getElementById("show-trim");
+
+  showTrimButton.addEventListener("click", () => {
     trimInputsContainer.style.display = "flex";
   });
 
@@ -285,6 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // what a ugly code lmao
     if (videoPlayer.currentTime < timeToSeconds(startTrimInput.value)) {
       alert("Please select a valid starting and ending time");
       return;
@@ -300,13 +308,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const startTrimSeconds = timeToSeconds(startTrimValue);
     const endTrimSeconds = timeToSeconds(endTrimValue);
 
-    if (endTrimSeconds - startTrimSeconds > 10) {
-      alert("Video needs to be maximum 10 seconds long.");
-      return;
-    }
+    //if (endTrimSeconds - startTrimSeconds > 10) {
+    //  alert("Video needs to be maximum 10 seconds long.");
+    //  return;
+    //}
 
     const videoFile = videoInputUpload.files[0];
     await trim(videoFile, startTrimValue, endTrimValue);
+
+    console.log("GIVE ME CREDITS FOR INFERENCE");
+
+    startTrimInput.value = null;
+    endTrimInput.value = null;
 
     // trimInputsContainer.style.display = "none";
     // videoInferenceContainer.style.display = "block";
@@ -380,7 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "processed_video.mp4";
+      a.download = "crafted_vvvdeo.mp4";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

@@ -1,8 +1,9 @@
+/*HTML elements*/
 main {
     margin-left: auto;
     margin-right: auto;
-    max-width: 1000px; /* Adjust to your preferred width */
-    padding: 0 20px; /* Optional: add some padding for spacing */
+    max-width: 1000px;
+    padding: 0 20px;
 }
 
 body {
@@ -23,17 +24,6 @@ main {
     padding: 2.5em;
 }
 
-#video-btn-div {
-}
-
-#btns-div {
-    display: flex;
-    flex-direction: row;
-    margin-bottom: 12px;
-    width: 100px;
-    gap: 10px;
-}
-
 button {
     background-color: #000000;
     color: white;
@@ -47,13 +37,63 @@ button:hover {
     background-color: #3d3d3d;
 }
 
+button:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+    border: 1px solid #ced4da;
+}
+
 video {
     width: 100%;
     max-width: 1200px;
     height: auto;
 }
 
-.video-container {
+/*Classes*/
+.images-grid {
+    display: grid;
+    margin-bottom: 16px;
+}
+
+.images-grid img {
+    max-width: 200px;
+    max-height: 150px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.spinner {
+    display: none;
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 5px solid #000000;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner-text {
+    text-align: center;
+    font-weight: bold;
+    color: #000000;
+    margin-top: 10px;
+    display: none;
+}
+
+/*ID Containers*/
+#video-container {
     position: relative;
     display: inline-block;
 }
@@ -93,6 +133,41 @@ video {
     height: 5px;
 }
 
+#show-btns-container {
+    display: none;
+    margin-top: 18px;
+}
+
+#inference-container {
+    display: none;
+    margin-top: 14px;
+}
+
+#trim-container {
+    display: none;
+    flex-direction: column;
+}
+
+#btn-labels-container {
+    display: flex;
+    gap: 4px;
+}
+
+#inf-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#btns-div {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 12px;
+    width: 100px;
+    gap: 10px;
+}
+
+/*ID misc*/
 #seg-add {
     background-color: green;
 }
@@ -105,19 +180,6 @@ video {
 }
 #seg-excl:disabled {
     background-color: #5c3c3c;
-}
-
-.images-grid {
-    display: grid;
-    margin-bottom: 16px;
-}
-
-.images-grid img {
-    max-width: 200px;
-    max-height: 150px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
 }
 
 #input-video {
@@ -134,40 +196,6 @@ video {
     font-weight: bold;
     font-size: 20px;
     margin-top: 18px;
-}
-
-.spinner {
-    display: none;
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 5px solid #000000;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.spinner-text {
-    text-align: center;
-    font-weight: bold;
-    color: #000000;
-    margin-top: 10px;
-    display: none;
-}
-
-#inf-btn-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 #video-player {
@@ -201,28 +229,14 @@ video {
     z-index: 1;
 }
 
-#inference-container {
-    display: none;
-    margin-top: 14px;
-}
-
-#btn-labels-container {
-    display: flex;
-    gap: 4px;
-}
-
 #inputs-trim {
     display: flex;
     gap: 20px;
 }
 
 #trim-button {
+    font-size: 20px;
     width: 65px;
     height: 40px;
     align-self: flex-end;
-}
-
-#trim-container {
-    display: none;
-    flex-direction: column;
 }
