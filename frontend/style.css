@@ -13,6 +13,14 @@ body {
     background-color: #f8f8f8;
 }
 
+footer {
+    background-color: #f8f9fa;
+    padding-top: 30px;
+    text-align: center;
+    bottom: 0;
+    width: 100%;
+}
+
 header {
     background-color: #181818;
     color: white;

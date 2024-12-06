@@ -256,6 +256,29 @@ document.addEventListener("DOMContentLoaded", () => {
     showButtonsContainer.style.display = "block";
   });
 
+  // document
+  //   .getElementById("download-form")
+  //   .addEventListener("submit", async (e) => {
+  //     e.preventDefault();
+  //     const url = document.getElementById("youtube-url").value;
+
+  //     const response = await fetch(backendUrl + "/ytvideo", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ url }),
+  //     });
+
+  //     if (response.ok) {
+  //       const blob = await response.blob();
+  //       console.log(blob);
+  //       videoPlayer.src = URL.createObjectURL(blob);
+  //       videoPlayer.play();
+  //     } else {
+  //       const error = await response.text();
+  //       alert(`Failed to stream video: ${error}`);
+  //     }
+  //   });
+
   const showTrimButton = document.getElementById("show-trim");
 
   showTrimButton.addEventListener("click", () => {
