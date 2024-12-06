@@ -5,13 +5,179 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const backendWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const inferenceVideoButtonElement = document.getElementById(
-    "inference-video-btn",
-  );
+  const videoPlayer = document.getElementById("video-player");
+  const videoInputUpload = document.getElementById("input-video");
+
+  // ffmpeg wasm trimming
+  let trimmedVideoFile = null;
+  let ffmpeg = null;
+  const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  const trim = async (file, startTrim, endTrim) => {
+    const ffmpegMessage = document.getElementById("ffmpeg-message");
+    if (ffmpeg === null) {
+      ffmpeg = new FFmpeg();
+      ffmpeg.on("log", ({ message }) => {
+        console.log(message);
+      });
+      ffmpeg.on("progress", ({ progress }) => {
+        ffmpegMessage.innerHTML = `${progress * 100} %`;
+      });
+      await ffmpeg.load({
+        coreURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.js`,
+          "text/javascript",
+        ),
+        wasmURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.wasm`,
+          "application/wasm",
+        ),
+      });
+    }
+
+    const { name } = file;
+    await ffmpeg.writeFile(name, await fetchFile(file));
+    ffmpegMessage.innerHTML = "Start trimming...";
+    await ffmpeg.exec([
+      "-fflags",
+      "+genpts",
+      "-ss",
+      startTrim,
+      "-to",
+      endTrim,
+      "-i",
+      name,
+      "-c:v",
+      "copy",
+      "output.mp4",
+    ]);
+    const data = await ffmpeg.readFile("output.mp4");
+    trimmedVideoFile = new Blob([data.buffer], { type: "video/mp4" });
+
+    videoPlayer.style.display = "block";
+    videoPlayer.src = URL.createObjectURL(trimmedVideoFile);
+    ffmpegMessage.hidden = true;
+  };
+
+  const trimInputsContainer = document.getElementById("trim-container");
+  const trimButtonFast = document.getElementById("trim-button-fast");
+  const showButtonsContainer = document.getElementById("show-btns-container");
+
+  videoInputUpload.addEventListener("change", () => {
+    const videoFile = videoInputUpload.files[0];
+    const videoURL = URL.createObjectURL(videoFile);
+
+    videoPlayer.src = videoURL;
+    videoPlayer.style.display = "block";
+
+    showButtonsContainer.style.display = "block";
+  });
+
+  // stream video from yt link (WIP)
+  // document
+  //   .getElementById("download-form")
+  //   .addEventListener("submit", async (e) => {
+  //     e.preventDefault();
+  //     const url = document.getElementById("youtube-url").value;
+
+  //     const response = await fetch(backendUrl + "/ytvideo", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ url }),
+  //     });
+
+  //     if (response.ok) {
+  //       const blob = await response.blob();
+  //       console.log(blob);
+  //       videoPlayer.src = URL.createObjectURL(blob);
+  //       videoPlayer.play();
+  //     } else {
+  //       const error = await response.text();
+  //       alert(`Failed to stream video: ${error}`);
+  //     }
+  //   });
+
+  const showTrimButton = document.getElementById("show-trim");
+
+  showTrimButton.addEventListener("click", () => {
+    trimInputsContainer.style.display = "flex";
+  });
+
+  function timeToSeconds(time) {
+    const [hours, minutes, seconds] = time.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  function secondsToTime(seconds) {
+    const hrs = Math.floor(seconds / 3600)
+      .toString()
+      .padStart(2, "0");
+    const mins = Math.floor((seconds % 3600) / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = Math.floor(seconds % 60)
+      .toString()
+      .padStart(2, "0");
+    const millis = Math.floor((seconds % 1) * 1000)
+      .toString()
+      .padStart(3, "0");
+    return `${hrs}:${mins}:${secs}.${millis}`;
+  }
+
+  const startTrimInput = document.getElementById("start-trim-input");
+  const endTrimInput = document.getElementById("end-trim-input");
+
+  const startTrimBtn = document.getElementById("start-trim-btn");
+  const endTrimBtn = document.getElementById("end-trim-btn");
+  startTrimBtn.addEventListener("click", () => {
+    console.log(videoPlayer.currentTime);
+    startTrimInput.value = secondsToTime(videoPlayer.currentTime);
+  });
+  endTrimBtn.addEventListener("click", () => {
+    console.log(videoPlayer.currentTime);
+    if (!startTrimInput.value) {
+      alert("Please select first the starting time.");
+      return;
+    }
+
+    // what a ugly code lmao
+    if (videoPlayer.currentTime < timeToSeconds(startTrimInput.value)) {
+      alert("Please select a valid starting and ending time");
+      return;
+    }
+
+    endTrimInput.value = secondsToTime(videoPlayer.currentTime);
+  });
+
+  trimButtonFast.addEventListener("click", async () => {
+    const startTrimValue = startTrimInput.value;
+    const endTrimValue = endTrimInput.value;
+
+    const startTrimSeconds = timeToSeconds(startTrimValue);
+    const endTrimSeconds = timeToSeconds(endTrimValue);
+
+    //if (endTrimSeconds - startTrimSeconds > 10) {
+    //  alert("Video needs to be maximum 10 seconds long.");
+    //  return;
+    //}
+
+    const videoFile = videoInputUpload.files[0];
+    await trim(videoFile, startTrimValue, endTrimValue);
+
+    console.log("GIVE ME CREDITS FOR INFERENCE");
+
+    startTrimInput.value = null;
+    endTrimInput.value = null;
+
+    // trimInputsContainer.style.display = "none";
+    // videoInferenceContainer.style.display = "block";
+    // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
+  });
 
   // VIDEO SEGMENTATION
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  const videoPlayer = document.getElementById("video-player");
+  const inferenceVideoButtonElement = document.getElementById(
+    "inference-video-btn",
+  );
   let coordinates = [];
   let labels = [];
   const shapesContainer = document.getElementById("shapes-container");
@@ -101,12 +267,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // VIDEO UPLOAD + WEBSOCKET CONNECTION
+  // VIDEO UPLOAD to R2 bucket + WEBSOCKET CONNECTION
   //
   const videoInferenceContainer = document.getElementById(
     "inference-container",
   );
-  const videoInputUpload = document.getElementById("input-video");
+
+  let ws;
+  let videoKey = localStorage.getItem("videoKey");
+  if (videoKey) {
+    const connToWs = async () => {
+      await connectToWebSocket(videoKey);
+    };
+
+    videoInputUpload.disabled = true;
+    connToWs();
+  }
 
   async function displayVideo(videoKey) {
     const presignedGetUrl = backendUrl + "/presigned-get-url?key=" + videoKey;
@@ -122,17 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error fetching presigned GET URL:", error);
     }
-  }
-
-  let ws;
-  let videoKey = localStorage.getItem("videoKey");
-  if (videoKey) {
-    const connToWs = async () => {
-      await connectToWebSocket(videoKey);
-    };
-
-    videoInputUpload.disabled = true;
-    connToWs();
   }
 
   const videoPreviewMessage = document.getElementById("video-preview-msg");
@@ -191,170 +356,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await connectToWebSocket(videoKey);
   }
-
-  // ffmpeg wasm trimming
-  let trimmedVideoFile = null;
-  let ffmpeg = null;
-  const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-  const trim = async (file, startTrim, endTrim, isFastSelected) => {
-    const ffmpegMessage = document.getElementById("ffmpeg-message");
-    if (ffmpeg === null) {
-      ffmpeg = new FFmpeg();
-      ffmpeg.on("log", ({ message }) => {
-        console.log(message);
-      });
-      ffmpeg.on("progress", ({ progress }) => {
-        ffmpegMessage.innerHTML = `${progress * 100} %`;
-      });
-      await ffmpeg.load({
-        coreURL: await toBlobURL(
-          `${baseURL}/ffmpeg-core.js`,
-          "text/javascript",
-        ),
-        wasmURL: await toBlobURL(
-          `${baseURL}/ffmpeg-core.wasm`,
-          "application/wasm",
-        ),
-      });
-    }
-
-    const { name } = file;
-    await ffmpeg.writeFile(name, await fetchFile(file));
-    ffmpegMessage.innerHTML = "Start trimming...";
-    await ffmpeg.exec([
-      "-fflags",
-      "+genpts",
-      "-ss",
-      startTrim,
-      "-to",
-      endTrim,
-      "-i",
-      name,
-      "-c:v",
-      "copy",
-      "output.mp4",
-    ]);
-    const data = await ffmpeg.readFile("output.mp4");
-    trimmedVideoFile = new Blob([data.buffer], { type: "video/mp4" });
-
-    videoPlayer.style.display = "block";
-    videoPlayer.src = URL.createObjectURL(trimmedVideoFile);
-    ffmpegMessage.hidden = true;
-  };
-
-  const trimInputsContainer = document.getElementById("trim-container");
-  const trimButtonFast = document.getElementById("trim-button-fast");
-  const showButtonsContainer = document.getElementById("show-btns-container");
-
-  videoInputUpload.addEventListener("change", () => {
-    const videoFile = videoInputUpload.files[0];
-    const videoURL = URL.createObjectURL(videoFile);
-
-    videoPlayer.src = videoURL;
-    videoPlayer.style.display = "block";
-
-    showButtonsContainer.style.display = "block";
-  });
-
-  // document
-  //   .getElementById("download-form")
-  //   .addEventListener("submit", async (e) => {
-  //     e.preventDefault();
-  //     const url = document.getElementById("youtube-url").value;
-
-  //     const response = await fetch(backendUrl + "/ytvideo", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ url }),
-  //     });
-
-  //     if (response.ok) {
-  //       const blob = await response.blob();
-  //       console.log(blob);
-  //       videoPlayer.src = URL.createObjectURL(blob);
-  //       videoPlayer.play();
-  //     } else {
-  //       const error = await response.text();
-  //       alert(`Failed to stream video: ${error}`);
-  //     }
-  //   });
-
-  const showTrimButton = document.getElementById("show-trim");
-
-  showTrimButton.addEventListener("click", () => {
-    trimInputsContainer.style.display = "flex";
-  });
-
-  function timeToSeconds(time) {
-    const [hours, minutes, seconds] = time.split(":").map(Number);
-    return hours * 3600 + minutes * 60 + seconds;
-  }
-
-  function secondsToTime(seconds) {
-    const hrs = Math.floor(seconds / 3600)
-      .toString()
-      .padStart(2, "0");
-    const mins = Math.floor((seconds % 3600) / 60)
-      .toString()
-      .padStart(2, "0");
-    const secs = Math.floor(seconds % 60)
-      .toString()
-      .padStart(2, "0");
-    const millis = Math.floor((seconds % 1) * 1000)
-      .toString()
-      .padStart(3, "0");
-    return `${hrs}:${mins}:${secs}.${millis}`;
-  }
-
-  const startTrimInput = document.getElementById("start-trim-input");
-  const endTrimInput = document.getElementById("end-trim-input");
-
-  const startTrimBtn = document.getElementById("start-trim-btn");
-  const endTrimBtn = document.getElementById("end-trim-btn");
-  startTrimBtn.addEventListener("click", () => {
-    console.log(videoPlayer.currentTime);
-    startTrimInput.value = secondsToTime(videoPlayer.currentTime);
-  });
-  endTrimBtn.addEventListener("click", () => {
-    console.log(videoPlayer.currentTime);
-    if (!startTrimInput.value) {
-      alert("Please select first the starting time.");
-      return;
-    }
-
-    // what a ugly code lmao
-    if (videoPlayer.currentTime < timeToSeconds(startTrimInput.value)) {
-      alert("Please select a valid starting and ending time");
-      return;
-    }
-
-    endTrimInput.value = secondsToTime(videoPlayer.currentTime);
-  });
-
-  trimButtonFast.addEventListener("click", async () => {
-    const startTrimValue = startTrimInput.value;
-    const endTrimValue = endTrimInput.value;
-
-    const startTrimSeconds = timeToSeconds(startTrimValue);
-    const endTrimSeconds = timeToSeconds(endTrimValue);
-
-    //if (endTrimSeconds - startTrimSeconds > 10) {
-    //  alert("Video needs to be maximum 10 seconds long.");
-    //  return;
-    //}
-
-    const videoFile = videoInputUpload.files[0];
-    await trim(videoFile, startTrimValue, endTrimValue, true);
-
-    console.log("GIVE ME CREDITS FOR INFERENCE");
-
-    startTrimInput.value = null;
-    endTrimInput.value = null;
-
-    // trimInputsContainer.style.display = "none";
-    // videoInferenceContainer.style.display = "block";
-    // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
-  });
 
   // INFERENCE
   //
