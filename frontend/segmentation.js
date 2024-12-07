@@ -73,28 +73,49 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // stream video from yt link (WIP)
-  // document
-  //   .getElementById("download-form")
-  //   .addEventListener("submit", async (e) => {
-  //     e.preventDefault();
-  //     const url = document.getElementById("youtube-url").value;
+  document
+    .getElementById("download-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = document.getElementById("youtube-url").value;
 
-  //     const response = await fetch(backendUrl + "/ytvideo", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ url }),
-  //     });
+      const response = await fetch(backendUrl + "/ytvideo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
 
-  //     if (response.ok) {
-  //       const blob = await response.blob();
-  //       console.log(blob);
-  //       videoPlayer.src = URL.createObjectURL(blob);
-  //       videoPlayer.play();
-  //     } else {
-  //       const error = await response.text();
-  //       alert(`Failed to stream video: ${error}`);
-  //     }
-  //   });
+      if (response.ok) {
+        const blob = await response.blob();
+        console.log(blob);
+        videoPlayer.src = URL.createObjectURL(blob);
+        videoPlayer.style.display = "block";
+        showButtonsContainer.style.display = "block";
+        videoPlayer.play();
+      } else {
+        const error = await response.text();
+        alert(`Failed to stream video: ${error}`);
+      }
+    });
+
+  const convertStreamToFile = async () => {
+    try {
+      const videoUrl = videoPlayer.src;
+      const response = await fetch(videoUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.statusText}`);
+      }
+      const videoBlob = await response.blob();
+      const videoFile = new File([videoBlob], "streamedVideo.mp4", {
+        type: videoBlob.type,
+      });
+      return videoFile;
+    } catch (error) {
+      console.error("Error converting video stream to file:", error);
+      alert("Failed to convert video stream to file.");
+      return null;
+    }
+  };
 
   const showTrimButton = document.getElementById("show-trim");
 
@@ -160,8 +181,12 @@ document.addEventListener("DOMContentLoaded", () => {
     //  return;
     //}
 
-    const videoFile = videoInputUpload.files[0];
-    await trim(videoFile, startTrimValue, endTrimValue);
+    if (videoInputUpload.files[0]) {
+      await trim(videoInputUpload.files[0], startTrimValue, endTrimValue);
+    } else {
+      const videoStreamFile = await convertStreamToFile();
+      await trim(videoStreamFile, startTrimValue, endTrimValue);
+    }
 
     console.log("GIVE ME CREDITS FOR INFERENCE");
 

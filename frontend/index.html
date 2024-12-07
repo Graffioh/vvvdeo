@@ -18,7 +18,14 @@
     </header>
     <main>
         <div class="input-div">
-            <h3>Pick a video</h3>
+            <h3>Stream youtube video via link</h3>
+            <form id="download-form">
+                <input type="text" id="youtube-url" placeholder="Enter YouTube URL" required>
+                <button type="submit">Stream Video</button>
+            </form>
+        </div>
+        <div class="input-div">
+            <h3>Pick a local video</h3>
             <form enctype="multipart/form-data">
                 <input id="input-video" type="file" name="video" accept="video/mp4">
             </form>
