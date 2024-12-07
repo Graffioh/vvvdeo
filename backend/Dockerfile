@@ -7,8 +7,6 @@
 FROM golang:1.22.3-alpine as builder
 WORKDIR /app
 
-COPY cookies.txt /root/
-
 # Copy the necessary files from the project structure
 COPY . .
 
@@ -21,6 +19,8 @@ FROM alpine
 
 # Install any required dependencies, including ffmpeg
 RUN apk --no-cache add ca-certificates ffmpeg yt-dlp
+
+COPY cookies.txt /root/
 
 WORKDIR /root/
 
