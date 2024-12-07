@@ -18,7 +18,7 @@ RUN go build -mod=vendor -o bin/vvvdeo
 FROM alpine
 
 # Install any required dependencies, including ffmpeg
-RUN apk --no-cache add ca-certificates ffmpeg
+RUN apk --no-cache add ca-certificates ffmpeg yt-dlp
 
 WORKDIR /root/
 
