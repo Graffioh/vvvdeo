@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -63,63 +62,68 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 */
 
 func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Failed to read request body", http.StatusBadRequest)
+        return
+    }
+    defer r.Body.Close()
 
-	var videoReq VideoRequest
-	if err := json.Unmarshal(body, &videoReq); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-		return
-	}
+    var videoReq VideoRequest
+    if err := json.Unmarshal(body, &videoReq); err != nil {
+        http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+        return
+    }
 
-	if videoReq.URL == "" {
-		http.Error(w, "Missing video URL", http.StatusBadRequest)
-		return
-	}
+    if videoReq.URL == "" {
+        http.Error(w, "Missing video URL", http.StatusBadRequest)
+        return
+    }
 
-	cmd := exec.Command("yt-dlp", "--cookies", "./cookies.txt", "-o", "-", "-f", "best", videoReq.URL)
+    cmd := exec.Command("yt-dlp", "--cookies", "./cookies.txt", "-o", "-", "-f", "best", videoReq.URL)
 
-	w.Header().Set("Content-Type", "video/mp4")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+    // Redirect stderr for logging
+    stderrPipe, err := cmd.StderrPipe()
+    if err != nil {
+        log.Printf("StderrPipe error: %v", err)
+        http.Error(w, "Failed to initialize stderr stream", http.StatusInternalServerError)
+        return
+    }
 
-	fmt.Println(cmd)
+    cmdOutput, err := cmd.StdoutPipe()
+    if err != nil {
+        log.Printf("StdoutPipe error: %v", err)
+        http.Error(w, "Failed to initialize video stream", http.StatusInternalServerError)
+        return
+    }
 
-	cmdOutput, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Printf("StdoutPipe error: %v", err)
-		http.Error(w, "Failed to initialize video stream", http.StatusInternalServerError)
-		return
-	}
+    log.Println("Pipes initialized successfully.")
 
-	log.Println("StdoutPipe initialized successfully.")
+    if err := cmd.Start(); err != nil {
+        log.Printf("Command start error: %v", err)
+        http.Error(w, "Failed to start video stream", http.StatusInternalServerError)
+        return
+    }
 
-	if err := cmd.Start(); err != nil {
-		log.Printf("Command start error: %v", err)
-		http.Error(w, "Failed to start video stream", http.StatusInternalServerError)
-		return
-	}
+    // Log stderr in a goroutine
+    go func() {
+        stderrData, _ := io.ReadAll(stderrPipe)
+        log.Printf("yt-dlp stderr: %s", string(stderrData))
+    }()
 
-	log.Println("Command started successfully.")
+    if _, err := io.Copy(w, cmdOutput); err != nil {
+        log.Printf("Streaming error: %v", err)
+        http.Error(w, "Failed to stream video", http.StatusInternalServerError)
+        return
+    }
 
-	if _, err := io.Copy(w, cmdOutput); err != nil {
-		log.Printf("Streaming error: %v", err)
-		http.Error(w, "Failed to stream video", http.StatusInternalServerError)
-		return
-	}
+    log.Println("Video stream completed successfully.")
 
-	log.Println("Video stream completed successfully.")
+    if err := cmd.Wait(); err != nil {
+        log.Printf("Command wait error: %v", err)
+        http.Error(w, "Error during video streaming", http.StatusInternalServerError)
+        return
+    }
 
-	if err := cmd.Wait(); err != nil {
-		log.Printf("Command wait error: %v", err)
-		http.Error(w, "Error during video streaming", http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Command finished successfully.")
-
+    log.Println("Command finished successfully.")
 }
