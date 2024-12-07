@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os/exec"
 )
@@ -85,24 +87,39 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
+	fmt.Println(cmd)
+
 	cmdOutput, err := cmd.StdoutPipe()
 	if err != nil {
+		log.Printf("StdoutPipe error: %v", err)
 		http.Error(w, "Failed to initialize video stream", http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("StdoutPipe initialized successfully.")
+
 	if err := cmd.Start(); err != nil {
+		log.Printf("Command start error: %v", err)
 		http.Error(w, "Failed to start video stream", http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("Command started successfully.")
+
 	if _, err := io.Copy(w, cmdOutput); err != nil {
+		log.Printf("Streaming error: %v", err)
 		http.Error(w, "Failed to stream video", http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("Video stream completed successfully.")
+
 	if err := cmd.Wait(); err != nil {
+		log.Printf("Command wait error: %v", err)
 		http.Error(w, "Error during video streaming", http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("Command finished successfully.")
+
 }
