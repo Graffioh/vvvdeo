@@ -79,7 +79,7 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("yt-dlp", "-o", "-", "-f", "best", videoReq.URL)
+	cmd := exec.Command("yt-dlp", "--cookies", "./cookies.txt", "-o", "-", "-f", "best", videoReq.URL)
 
 	w.Header().Set("Content-Type", "video/mp4")
 	w.Header().Set("Cache-Control", "no-cache")
