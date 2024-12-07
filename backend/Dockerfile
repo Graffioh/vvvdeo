@@ -7,6 +7,8 @@
 FROM golang:1.22.3-alpine as builder
 WORKDIR /app
 
+COPY cookies.txt /root/
+
 # Copy the necessary files from the project structure
 COPY . .
 
