@@ -44,7 +44,7 @@ func main() {
 	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationFromWorkerHandler)
 	mux.HandleFunc("/frames-extraction-complete", handlers.FrameNotificationFromWorkerHandler)
 	mux.HandleFunc("/ws", handlers.WebSocketHandler)
-	mux.HandleFunc("/ytvideo", handlers.VideoStreamYTHandler)
+	//mux.HandleFunc("/ytvideo", handlers.VideoStreamYTHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
 	handler := c.Handler(mux)

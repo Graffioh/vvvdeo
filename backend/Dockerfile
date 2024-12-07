@@ -20,8 +20,6 @@ FROM alpine
 # Install any required dependencies, including ffmpeg
 RUN apk --no-cache add ca-certificates ffmpeg yt-dlp
 
-COPY cookies.txt /root/
-
 WORKDIR /root/
 
 # Copy the binary from the builder stage and set it as the default command

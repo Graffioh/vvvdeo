@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 )
 
@@ -81,16 +80,8 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cookies_path string
+	cmd := exec.Command("yt-dlp", "-o", "-", "-f", "best", videoReq.URL)
 
-	if os.Getenv("APP_ENV") != "PROD" {
-		cookies_path = "./cookies.txt"
-	} else {
-		cookies_path = "/root/cookies.txt"
-	}
-	cmd := exec.Command("yt-dlp", "--cookies", cookies_path, "-o", "-", "-f", "best", videoReq.URL)
-
-	// Redirect stderr for logging
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		log.Printf("StderrPipe error: %v", err)
