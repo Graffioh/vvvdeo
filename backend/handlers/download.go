@@ -1,13 +1,5 @@
 package handlers
 
-import (
-	"encoding/json"
-	"io"
-	"log"
-	"net/http"
-	"os/exec"
-)
-
 type VideoRequest struct {
 	URL string `json:"url"`
 }
@@ -61,6 +53,7 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 }
 */
 
+/*
 func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -126,3 +119,4 @@ func VideoStreamYTHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Command finished successfully.")
 }
+*/

@@ -43,7 +43,7 @@ model_str = "facebook/sam2-hiera-base-plus" if torch.cuda.is_available() else "f
 predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 
 def get_path_from_presignedurl(key) -> str:
-        url = f"http://localhost:8080/presigned-get-url?key={key}"
+        url = f"http://localhost:8080/presigned-url/get?key={key}"
         try:
             response = requests.get(url)
             response.raise_for_status()

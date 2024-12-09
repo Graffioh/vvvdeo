@@ -38,13 +38,14 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/inference-video", handlers.InferenceVideoHandler)
-	mux.HandleFunc("/presigned-put-url", storage.PresignedPutURLHandler)
-	mux.HandleFunc("/presigned-get-url", storage.PresignedGetURLHandler)
-	mux.HandleFunc("/video-upload-complete", handlers.VideoUploadNotificationFromWorkerHandler)
-	mux.HandleFunc("/frames-extraction-complete", handlers.FrameNotificationFromWorkerHandler)
+	mux.HandleFunc("/inference-video", handlers.VideoInferenceHandler)
+	mux.HandleFunc("/presigned-url/put", storage.PresignedPutURLHandler)
+	mux.HandleFunc("/presigned-url/get", storage.PresignedGetURLHandler)
+	mux.HandleFunc("/notification/video-upload", handlers.VideoUploadNotificationFromWorkerHandler)
+	mux.HandleFunc("/notification/frames-extraction", handlers.FrameNotificationFromWorkerHandler)
 	mux.HandleFunc("/ws", handlers.WebSocketHandler)
 	//mux.HandleFunc("/ytvideo", handlers.VideoStreamYTHandler)
+	mux.HandleFunc("/video/speedup", handlers.VideoSpeedupHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
 	handler := c.Handler(mux)

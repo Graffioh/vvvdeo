@@ -19,8 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ffmpeg.on("log", ({ message }) => {
         console.log(message);
       });
-      ffmpeg.on("progress", ({ progress }) => {
-        ffmpegMessage.innerHTML = `${progress * 100} %`;
+      ffmpeg.on("progress", ({ progress, time }) => {
+        ffmpegMessage.innerHTML = `${progress * 100} % (transcoded time: ${time / 1000000} s)`;
       });
       await ffmpeg.load({
         coreURL: await toBlobURL(
@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "copy",
       "output.mp4",
     ]);
+
     const data = await ffmpeg.readFile("output.mp4");
     trimmedVideoFile = new Blob([data.buffer], { type: "video/mp4" });
 
@@ -58,8 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ffmpegMessage.hidden = true;
   };
 
-  const trimInputsContainer = document.getElementById("trim-container");
-  const trimButtonFast = document.getElementById("trim-button-fast");
   const showButtonsContainer = document.getElementById("show-btns-container");
 
   videoInputUpload.addEventListener("change", () => {
@@ -117,10 +116,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
+
   const showTrimButton = document.getElementById("show-trim");
+  const trimButtonFast = document.getElementById("trim-button");
+
+  const showSpeedupButton = document.getElementById("show-speedup");
+  const speedupButton = document.getElementById("speedup-button");
 
   showTrimButton.addEventListener("click", () => {
-    trimInputsContainer.style.display = "flex";
+    ffmpegInputsContainer.style.display = "block";
+    speedupButton.style.display = "none";
+    trimButtonFast.style.display = "block";
+  });
+
+  showSpeedupButton.addEventListener("click", () => {
+    ffmpegInputsContainer.style.display = "block";
+    speedupButton.style.display = "block";
+    trimButtonFast.style.display = "none";
   });
 
   function timeToSeconds(time) {
@@ -144,34 +157,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${hrs}:${mins}:${secs}.${millis}`;
   }
 
-  const startTrimInput = document.getElementById("start-trim-input");
-  const endTrimInput = document.getElementById("end-trim-input");
+  const startTimestampInput = document.getElementById("start-timestamp-input");
+  const endTimestampInput = document.getElementById("end-timestamp-input");
 
-  const startTrimBtn = document.getElementById("start-trim-btn");
-  const endTrimBtn = document.getElementById("end-trim-btn");
-  startTrimBtn.addEventListener("click", () => {
-    console.log(videoPlayer.currentTime);
-    startTrimInput.value = secondsToTime(videoPlayer.currentTime);
+  const startTimestampBtn = document.getElementById("start-timestamp-btn");
+  const endTimestampBtn = document.getElementById("end-timestamp-btn");
+  startTimestampBtn.addEventListener("click", () => {
+    console.log("YO");
+    startTimestampInput.value = secondsToTime(videoPlayer.currentTime);
   });
-  endTrimBtn.addEventListener("click", () => {
-    console.log(videoPlayer.currentTime);
-    if (!startTrimInput.value) {
+  endTimestampBtn.addEventListener("click", () => {
+    if (!startTimestampInput.value) {
       alert("Please select first the starting time.");
       return;
     }
 
     // what a ugly code lmao
-    if (videoPlayer.currentTime < timeToSeconds(startTrimInput.value)) {
+    if (videoPlayer.currentTime < timeToSeconds(startTimestampInput.value)) {
       alert("Please select a valid starting and ending time");
       return;
     }
 
-    endTrimInput.value = secondsToTime(videoPlayer.currentTime);
+    endTimestampInput.value = secondsToTime(videoPlayer.currentTime);
   });
 
   trimButtonFast.addEventListener("click", async () => {
-    const startTrimValue = startTrimInput.value;
-    const endTrimValue = endTrimInput.value;
+    const startTrimValue = startTimestampInput.value;
+    const endTrimValue = endTimestampInput.value;
 
     const startTrimSeconds = timeToSeconds(startTrimValue);
     const endTrimSeconds = timeToSeconds(endTrimValue);
@@ -184,18 +196,63 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videoInputUpload.files[0]) {
       await trim(videoInputUpload.files[0], startTrimValue, endTrimValue);
     } else {
+      // for youtube downloaded video (wip)
       const videoStreamFile = await convertStreamToFile();
       await trim(videoStreamFile, startTrimValue, endTrimValue);
     }
 
     console.log("GIVE ME CREDITS FOR INFERENCE");
 
-    startTrimInput.value = null;
-    endTrimInput.value = null;
+    startTimestampInput.value = null;
+    endTimestampInput.value = null;
 
     // trimInputsContainer.style.display = "none";
     // videoInferenceContainer.style.display = "block";
     // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
+  });
+
+  speedupButton.addEventListener("click", async () => {
+    const startTrimValue = startTimestampInput.value;
+    const endTrimValue = endTimestampInput.value;
+
+    const videoInputFile = videoInputUpload.files[0];
+    if (videoInputFile) {
+      try {
+        const formData = new FormData();
+        formData.append("videoFile", videoInputFile);
+        formData.append("startTime", startTrimValue);
+        formData.append("endTime", endTrimValue);
+
+        const speedupVideoResponse = await fetch(
+          backendUrl + "/video/speedup",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+        if (speedupVideoResponse.ok) {
+          const speedupVideoblob = await speedupVideoResponse.blob();
+          videoPlayer.src = URL.createObjectURL(speedupVideoblob);
+          videoPlayer.load();
+        } else {
+          console.error(
+            "Error fetching speedup video. Status:",
+            speedupVideoResponse.status,
+          );
+          const errorText = await speedupVideoResponse.text();
+          console.error("Error details:", errorText);
+        }
+      } catch (error) {
+        console.error("Error fetching speedup video.", error);
+        return;
+      }
+    }
+
+    console.log("GIVE ME CREDITS FOR INFERENCE");
+
+    startTimestampInput.value = null;
+    endTimestampInput.value = null;
   });
 
   // VIDEO SEGMENTATION
@@ -310,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function displayVideo(videoKey) {
-    const presignedGetUrl = backendUrl + "/presigned-get-url?key=" + videoKey;
+    const presignedGetUrl = backendUrl + "/presigned-url/get?key=" + videoKey;
     try {
       const presignedGetResponse = await fetch(presignedGetUrl, {
         method: "POST",
@@ -362,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
     videoPreviewMessage.hidden = false;
 
     // upload video to r2 bucket with presigned url
-    const presignedPutUrl = backendUrl + "/presigned-put-url";
+    const presignedPutUrl = backendUrl + "/presigned-url/put";
     const presignedPutResponse = await fetch(presignedPutUrl, {
       method: "POST",
     });
