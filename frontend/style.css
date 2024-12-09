@@ -100,6 +100,11 @@ video {
     display: none;
 }
 
+.ffmpeg-inputs {
+    display: flex;
+    gap: 20px;
+}
+
 /*ID Containers*/
 #video-container {
     position: relative;
@@ -151,7 +156,7 @@ video {
     margin-top: 14px;
 }
 
-#trim-container {
+#ffmpeg-container {
     display: none;
     flex-direction: column;
 }
@@ -237,25 +242,22 @@ video {
     z-index: 1;
 }
 
-#inputs-trim {
-    display: flex;
-    gap: 20px;
-}
-
-.trim-button-wrapper {
+.ffmpeg-button-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
 }
 
-#trim-button-fast {
+#trim-button,
+#speedup-button {
     font-size: 20px;
     width: 65px;
     height: 40px;
     margin-top: auto;
 }
 
-#trim-icon {
+#ubel-icon,
+#korosensei-icon {
     position: absolute;
     bottom: 50%;
     left: 50%;
@@ -269,6 +271,12 @@ video {
     pointer-events: none;
 }
 
-.trim-button-wrapper:hover #trim-icon {
+#trim-button:hover + #ubel-icon {
     opacity: 1;
+    transform: translateX(-50%) translateY(0px);
+}
+
+#speedup-button:hover + #korosensei-icon {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0px);
 }

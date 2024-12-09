@@ -19,7 +19,7 @@ type Points struct {
 	Labels      []int32            `json:"labels"`
 }
 
-func InferenceVideoHandler(w http.ResponseWriter, r *http.Request) {
+func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
 		return

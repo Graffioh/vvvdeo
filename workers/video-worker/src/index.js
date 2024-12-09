@@ -18,7 +18,7 @@ export default {
 			if (key.includes('PROD')) {
 				try {
 					if (key.includes('videos/')) {
-						const videoUploadResponse = await fetch(env.BACKEND_URL + '/video-upload-complete', {
+						const videoUploadResponse = await fetch(env.BACKEND_URL + '/notification/video-upload', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({ videoKey: key, status: 'uploaded' }),
@@ -28,7 +28,7 @@ export default {
 							throw new Error(`Failed to send Video upload notification: ${videoUploadResponse.statusText}`);
 						}
 					} else if (key.includes('frames/')) {
-						const frameExtractionResponse = await fetch(env.BACKEND_URL + '/frames-extraction-complete', {
+						const frameExtractionResponse = await fetch(env.BACKEND_URL + '/notification/frames-extraction', {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({ videoKey: key, status: 'extracted' }),

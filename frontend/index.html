@@ -39,25 +39,28 @@
         </div>
         <div id="show-btns-container">
             <button id="show-trim">Trim video</button>
+            <button id="show-speedup">Speed-up video</button>
             <button disabled>Segment video (give me credits for gpu)</button>
         </div>
-        <div id="trim-container">
+        <div id="ffmpeg-container">
             <p id="ffmpeg-message"></p>
                 <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
-                <div id="inputs-trim">
-                <div id="start-trim-container">
+            <div class="ffmpeg-inputs">
+                <div id="start-timestamp-container">
                     <p>Start</p>
-                    <input id="start-trim-input" type="time" step="1">
-                    <button id="start-trim-btn">⦿</button>
+                    <input id="start-timestamp-input" type="time" step="1">
+                    <button id="start-timestamp-btn">⦿</button>
                 </div>
-                <div id="end-trim-container">
+                <div id="end-timestamp-container">
                     <p>End</p>
-                    <input id="end-trim-input" type="time" step="1">
-                    <button id="end-trim-btn">⦿</button>
+                    <input id="end-timestamp-input" type="time" step="1">
+                    <button id="end-timestamp-btn">⦿</button>
                 </div>
-                <div class="trim-button-wrapper">
-                    <img src="./public/ubel-cut.png" alt="Trim Icon" id="trim-icon">
-                    <button class="trim-button" id="trim-button-fast">✂</button>
+                <div class="ffmpeg-button-wrapper">
+                    <button id="trim-button">✂</button>
+                    <img src="./ubel-cut.png" alt="Trim Icon" id="ubel-icon">
+                    <button id="speedup-button">⋙</button>
+                    <img src="./korosensei-speed.png" alt="Speedup Icon" id="korosensei-icon">
                 </div>
             </div>
         </div>
