@@ -226,6 +226,10 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("startTime", startTrimValue);
         formData.append("endTime", endTrimValue);
 
+        ffmpegInputsContainer.style.display = "none";
+        spinner.style.display = "block";
+        loadingText.style.display = "block";
+
         const speedupVideoResponse = await fetch(
           backendUrl + "/video/speedup",
           {
@@ -238,6 +242,10 @@ document.addEventListener("DOMContentLoaded", () => {
           const speedupVideoblob = await speedupVideoResponse.blob();
           videoPlayer.src = URL.createObjectURL(speedupVideoblob);
           videoPlayer.load();
+
+          ffmpegInputsContainer.style.display = "block";
+          spinner.style.display = "none";
+          loadingText.style.display = "none";
         } else {
           console.error(
             "Error fetching speedup video. Status:",
