@@ -280,3 +280,19 @@ video {
     opacity: 1;
     transform: translateX(-50%) translateY(0px);
 }
+
+#speedup-factor-input {
+    width: 38px;
+}
+
+.x-label {
+    vertical-align: middle; /*align with the middle of the input box */
+    margin-right: 2px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+#speedup-input-container {
+    display: flex;
+    align-items: center; /* Vertically center the items */
+}

@@ -123,17 +123,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const showSpeedupButton = document.getElementById("show-speedup");
   const speedupButton = document.getElementById("speedup-button");
+  const speedupFactorContainer = document.getElementById(
+    "speedup-input-container",
+  );
+  const speedupFactorInput = document.getElementById("speedup-factor-input");
 
   showTrimButton.addEventListener("click", () => {
     ffmpegInputsContainer.style.display = "block";
     speedupButton.style.display = "none";
     trimButtonFast.style.display = "block";
+    speedupFactorContainer.style.display = "none";
   });
 
   showSpeedupButton.addEventListener("click", () => {
     ffmpegInputsContainer.style.display = "block";
     speedupButton.style.display = "block";
     trimButtonFast.style.display = "none";
+    speedupFactorContainer.style.display = "block";
   });
 
   function timeToSeconds(time) {
@@ -225,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("videoFile", videoInputFile);
         formData.append("startTime", startTrimValue);
         formData.append("endTime", endTrimValue);
+        formData.append("speedupFactor", speedupFactorInput.value);
 
         ffmpegInputsContainer.style.display = "none";
         spinner.style.display = "block";

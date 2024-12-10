@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 )
 
 func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +53,13 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 
 	startTime := r.FormValue("startTime")
 	endTime := r.FormValue("endTime")
+	speedupFactorStr := r.FormValue("speedupFactor")
+	speedupFactor, err := strconv.ParseFloat(speedupFactorStr, 64)
+	if err != nil {
+		fmt.Println("Error parsing speedupFactor:", err)
+		http.Error(w, "Invalid speedupFactor value. Please provide a valid number.", http.StatusBadRequest)
+		return
+	}
 
 	beforePart := filepath.Join(tempDir, "before.mp4")
 	afterPart := filepath.Join(tempDir, "after.mp4")
@@ -76,8 +84,11 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setptsMultiplier := 1 / speedupFactor
+	speedupFilter := fmt.Sprintf("[0:v]setpts=PTS-STARTPTS,setpts=%f*PTS[v];[0:a]atempo=%f[a]", setptsMultiplier, speedupFactor)
+
 	cmd3 := exec.Command("ffmpeg", "-y", "-ss", startTime, "-to", endTime, "-i", tempFile.Name(),
-		"-filter_complex", "[0:v]setpts=PTS-STARTPTS,setpts=0.5*PTS[v];[0:a]atempo=2.0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", speedupPart)
+		"-filter_complex", speedupFilter, "-map", "[v]", "-map", "[a]", "-f", "mp4", speedupPart)
 	output3, err := cmd3.CombinedOutput()
 	if err != nil {
 		fmt.Println("FFmpeg Error (speedup):", err)
