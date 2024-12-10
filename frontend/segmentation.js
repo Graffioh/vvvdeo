@@ -212,7 +212,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   speedupButton.addEventListener("click", async () => {
-    const startTrimValue = startTimestampInput.value;
+    const startTrimValue =
+      startTimestampInput.value === "00:00:00.000"
+        ? "00:00:00.100"
+        : startTimestampInput.value;
     const endTrimValue = endTimestampInput.value;
 
     const videoInputFile = videoInputUpload.files[0];

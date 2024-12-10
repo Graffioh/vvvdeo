@@ -104,10 +104,6 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("FFmpeg command:", cmd4.String())
-	fmt.Println("FFmpeg output:", string(output4))
-	fmt.Println("Error:", err)
-
 	outFile, err := os.Open(finalFile)
 	if err != nil {
 		http.Error(w, "Failed to open output file", http.StatusInternalServerError)
