@@ -58,8 +58,7 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 	speedupPart := filepath.Join(tempDir, "speedup.mp4")
 	finalFile := filepath.Join(tempDir, "final.mp4")
 
-	cmd1 := exec.Command("ffmpeg", "-to", startTime, "-i", tempFile.Name(),
-		"-c", "copy", beforePart)
+	cmd1 := exec.Command("ffmpeg", "-y", "-to", startTime, "-i", tempFile.Name(), "-filter_complex", "[0:v]setpts=PTS-STARTPTS[v];[0:a]aresample=async=1:first_pts=0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", beforePart)
 	output1, err := cmd1.CombinedOutput()
 	if err != nil {
 		fmt.Println("FFmpeg Error (cut before):", err)
@@ -68,8 +67,7 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd2 := exec.Command("ffmpeg", "-ss", endTime, "-i", tempFile.Name(),
-		"-c", "copy", afterPart)
+	cmd2 := exec.Command("ffmpeg", "-y", "-ss", endTime, "-i", tempFile.Name(), "-filter_complex", "[0:v]setpts=PTS-STARTPTS[v];[0:a]aresample=async=1:first_pts=0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", afterPart)
 	output2, err := cmd2.CombinedOutput()
 	if err != nil {
 		fmt.Println("FFmpeg Error (cut after):", err)
@@ -78,8 +76,8 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd3 := exec.Command("ffmpeg", "-ss", startTime, "-to", endTime, "-i", tempFile.Name(),
-		"-vf", "setpts=0.5*PTS", "-af", "atempo=2.0", speedupPart)
+	cmd3 := exec.Command("ffmpeg", "-y", "-ss", startTime, "-to", endTime, "-i", tempFile.Name(),
+		"-filter_complex", "[0:v]setpts=PTS-STARTPTS,setpts=0.5*PTS[v];[0:a]atempo=2.0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", speedupPart)
 	output3, err := cmd3.CombinedOutput()
 	if err != nil {
 		fmt.Println("FFmpeg Error (speedup):", err)
@@ -105,6 +103,10 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to concatenate video", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println("FFmpeg command:", cmd4.String())
+	fmt.Println("FFmpeg output:", string(output4))
+	fmt.Println("Error:", err)
 
 	outFile, err := os.Open(finalFile)
 	if err != nil {
