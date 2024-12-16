@@ -7,6 +7,9 @@ const backendWsUrl = import.meta.env.VITE_BACKEND_WS_URL;
 document.addEventListener("DOMContentLoaded", () => {
   const videoPlayer = document.getElementById("video-player");
   const videoInputUpload = document.getElementById("input-video");
+  const videoPlayerContainer = document.getElementById(
+    "video-player-container",
+  );
 
   // ffmpeg wasm trimming
   let trimmedVideoFile = null;
@@ -59,16 +62,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ffmpegMessage.hidden = true;
   };
 
-  const showButtonsContainer = document.getElementById("show-btns-container");
-
   videoInputUpload.addEventListener("change", () => {
     const videoFile = videoInputUpload.files[0];
     const videoURL = URL.createObjectURL(videoFile);
 
     videoPlayer.src = videoURL;
-    videoPlayer.style.display = "block";
-
-    showButtonsContainer.style.display = "block";
+    videoPlayerContainer.style.display = "block";
   });
 
   // stream video from yt link (WIP)
@@ -118,25 +117,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
 
-  const showTrimButton = document.getElementById("show-trim");
-  const trimButtonFast = document.getElementById("trim-button");
+  const showTrimButton = document.getElementById("show-trim-btn");
+  const trimButtonFast = document.getElementById("trim-btn");
 
-  const showSpeedupButton = document.getElementById("show-speedup");
-  const speedupButton = document.getElementById("speedup-button");
+  const showSpeedupButton = document.getElementById("show-speedup-btn");
+  const speedupButton = document.getElementById("speedup-btn");
   const speedupFactorContainer = document.getElementById(
-    "speedup-input-container",
+    "speedup-inputs-container",
   );
   const speedupFactorInput = document.getElementById("speedup-factor-input");
 
   showTrimButton.addEventListener("click", () => {
-    ffmpegInputsContainer.style.display = "block";
+    ffmpegInputsContainer.style.display = "flex";
+
     speedupButton.style.display = "none";
     trimButtonFast.style.display = "block";
     speedupFactorContainer.style.display = "none";
   });
 
   showSpeedupButton.addEventListener("click", () => {
-    ffmpegInputsContainer.style.display = "block";
+    ffmpegInputsContainer.style.display = "flex";
+
     speedupButton.style.display = "block";
     trimButtonFast.style.display = "none";
     speedupFactorContainer.style.display = "block";
@@ -234,8 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("speedupFactor", speedupFactorInput.value);
 
         ffmpegInputsContainer.style.display = "none";
-        spinner.style.display = "block";
-        loadingText.style.display = "block";
+        loadingSpinnerContainer.style.display = "block";
 
         const speedupVideoResponse = await fetch(
           backendUrl + "/video/speedup",
@@ -251,8 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
           videoPlayer.load();
 
           ffmpegInputsContainer.style.display = "block";
-          spinner.style.display = "none";
-          loadingText.style.display = "none";
+          loadingSpinnerContainer.style.display = "none";
         } else {
           console.error(
             "Error fetching speedup video. Status:",
@@ -459,8 +458,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // INFERENCE
   //
-  const spinner = document.getElementById("loading-spinner");
-  const loadingText = document.getElementById("loading-text");
+  const loadingSpinnerContainer = document.getElementById(
+    "loading-spinner-container",
+  );
 
   inferenceVideoButtonElement.addEventListener("click", async () => {
     const imageFile = imageInput.files[0];
@@ -487,8 +487,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }),
     );
 
-    spinner.style.display = "block";
-    loadingText.style.display = "block";
+    loadingSpinnerContainer.style.display = "block";
     inferenceVideoButtonElement.hidden = true;
     addPositiveLabelButton.disabled = true;
     addNegativeLabelButton.disabled = true;
@@ -534,8 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error:", error);
     } finally {
-      spinner.style.display = "none";
-      loadingText.style.display = "none";
+      loadingSpinnerContainer.style.display = "none";
       inferenceVideoButtonElement.hidden = false;
     }
   });

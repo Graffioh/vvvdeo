@@ -1,9 +1,10 @@
 /*HTML elements*/
+
 main {
     margin-left: auto;
     margin-right: auto;
     max-width: 1000px;
-    padding: 0 20px;
+    padding: 2.5em;
 }
 
 body {
@@ -11,6 +12,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f8f8f8;
+    position: relative;
 }
 
 footer {
@@ -28,10 +30,6 @@ header {
     text-align: center;
 }
 
-main {
-    padding: 2.5em;
-}
-
 button {
     background-color: #000000;
     color: white;
@@ -39,6 +37,7 @@ button {
     padding: 8px 12px;
     border-radius: 4px;
     cursor: pointer;
+    width: auto;
 }
 
 button:hover {
@@ -58,29 +57,15 @@ video {
     height: auto;
 }
 
-/*Classes*/
-.images-grid {
-    display: grid;
-    margin-bottom: 16px;
-}
-
-.images-grid img {
-    max-width: 200px;
-    max-height: 150px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-}
+/* Classes */
 
 .spinner {
-    display: none;
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 5px solid #000000;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
+    border: 8px solid #f3f3f3; /* Light grey background */
+    border-top: 6px solid #000; /* Black spinner */
+    border-radius: 50%; /* Makes it circular */
+    width: 60px; /* Width of the spinner */
+    height: 60px; /* Height of the spinner */
+    animation: spin 1s linear infinite; /* Animation settings */
 }
 
 @keyframes spin {
@@ -92,207 +77,82 @@ video {
     }
 }
 
-.spinner-text {
-    text-align: center;
-    font-weight: bold;
-    color: #000000;
-    margin-top: 10px;
-    display: none;
-}
-
-.ffmpeg-inputs {
+.timestamp-container {
     display: flex;
-    gap: 20px;
+    height: 32px;
+    gap: 6px;
+    margin: 8px;
 }
 
-/*ID Containers*/
-#video-container {
+.timestamp-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.ffmpeg-btn-container {
     position: relative;
-    display: inline-block;
 }
 
-#shapes-container {
+.ffmpeg-btn {
+    font-size: 20px;
+    width: 62px;
+}
+
+.btn-icon {
+    width: 52px;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    opacity: 0;
+    transition:
+        opacity 0.1s ease,
+        top 0.1s ease;
     pointer-events: none;
 }
 
-#shapes-container div {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    transform: translate(-50%, -50%);
+.ffmpeg-btn-container:hover .btn-icon {
+    opacity: 1;
 }
 
-#shapes-container .circle {
-    border-radius: 50%;
-    background-color: green;
-    border: 2px solid black;
-    outline-style: solid;
-    outline-color: white;
-    width: 5px;
-    height: 5px;
+.div-section {
+    margin-top: 16px;
+    margin-bottom: 16px;
 }
 
-#shapes-container .square {
-    background-color: red;
-    border: 2px solid black;
-    outline-style: solid;
-    outline-color: white;
-    width: 5px;
-    height: 5px;
-}
+/* IDs */
 
-#show-btns-container {
+#video-player-container {
     display: none;
-    margin-top: 18px;
-}
-
-#inference-container {
-    display: none;
-    margin-top: 14px;
+    flex-direction: column;
 }
 
 #ffmpeg-container {
     display: none;
-    flex-direction: column;
 }
 
-#btn-labels-container {
-    display: flex;
-    gap: 4px;
-}
-
-#inf-btn-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#btns-div {
-    display: flex;
-    flex-direction: row;
-    margin-bottom: 12px;
-    width: 100px;
-    gap: 10px;
-}
-
-/*ID misc*/
-#seg-add {
-    background-color: green;
-}
-#seg-add:disabled {
-    background-color: #3d5c39;
-}
-
-#seg-excl {
-    background-color: red;
-}
-#seg-excl:disabled {
-    background-color: #5c3c3c;
-}
-
-#input-video {
-    margin-bottom: 10px;
-}
-
-#input-img {
-    margin-bottom: 10px;
-}
-
-#inference-video-btn {
-    width: 200px;
-    height: 100px;
-    font-weight: bold;
-    font-size: 20px;
-    margin-top: 18px;
-}
-
-#video-player {
+#inference-container {
     display: none;
 }
 
-#inference-video-btn:disabled {
-    background-color: #e9ecef;
-    color: #6c757d;
-    cursor: not-allowed;
-    border: 1px solid #ced4da;
+#loading-spinner-container {
+    display: none;
 }
 
-#video-length-msg {
-    color: #6c757d;
-    font-size: 16px;
+#ffmpeg-btn-wrapper {
+    pisition: relative;
 }
 
-#video-preview-msg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 24px;
-    background-color: rgba(0, 0, 0, 0.6);
-    padding: 10px 20px;
-    border-radius: 5px;
-    pointer-events: none;
-    text-align: center;
-    z-index: 1;
-}
-
-.ffmpeg-button-wrapper {
-    position: relative;
+#show-btn-container {
     display: flex;
-    flex-direction: column;
-}
-
-#trim-button,
-#speedup-button {
-    font-size: 20px;
-    width: 65px;
-    height: 40px;
-    margin-top: auto;
-}
-
-#ubel-icon,
-#korosensei-icon {
-    position: absolute;
-    bottom: 50%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition:
-        opacity 0.1s ease,
-        transform 0.1s ease;
-    max-width: 68px;
-    z-index: 10;
-    pointer-events: none;
-}
-
-#trim-button:hover + #ubel-icon {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0px);
-}
-
-#speedup-button:hover + #korosensei-icon {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0px);
+    gap: 10px;
 }
 
 #speedup-factor-input {
     width: 38px;
 }
 
-.x-label {
-    vertical-align: middle; /*align with the middle of the input box */
-    margin-right: 2px;
-    font-size: 0.9em;
-    color: #666;
+#korosensei-icon {
+    top: -70%;
 }
 
-#speedup-input-container {
-    display: flex;
-    align-items: center; /* Vertically center the items */
+#ubel-icon {
+    top: -130%;
 }

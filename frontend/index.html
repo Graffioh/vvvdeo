@@ -24,53 +24,55 @@
                 <button type="submit">Stream Video</button> (not working)
             </form>
         </div>-->
-        <div class="input-div">
+        <div class="div-section">
             <h3>Pick a local video</h3>
             <form enctype="multipart/form-data">
                 <input id="input-video" type="file" name="video" accept="video/mp4">
             </form>
         </div>
-        <div id="video-container">
+        <div id="video-player-container" class="div-section">
             <video id="video-player" controls width="1080"></video>
             <div hidden id="video-preview-msg">
                     Video preview, frames are being extracted for inference...
                 </div>
-            <div id="shapes-container"></div>
+            <div id="coordinates-shape-container"></div>
+            <div id="show-btn-container" class="div-section">
+                <button id="show-trim-btn">Trim video</button>
+                <button id="show-speedup-btn">Speedup video</button>
+                <button disabled>Segment video (give me credits for gpu)</button>
+            </div>
+            <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
         </div>
-        <div id="show-btns-container">
-            <button id="show-trim">Trim video</button>
-            <button id="show-speedup">Speedup video</button>
-            <button disabled>Segment video (give me credits for gpu)</button>
-        </div>
-        <div id="ffmpeg-container">
+        <div id="ffmpeg-container" class="div-section">
             <p id="ffmpeg-message"></p>
-                <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
-            <div class="ffmpeg-inputs">
-                <div id="start-timestamp-container">
-                    <p>Start</p>
+            <div class="timestamp-block">
+                <span>Start</span>
+                <div class="timestamp-container">
                     <input id="start-timestamp-input" type="time" step="1">
                     <button id="start-timestamp-btn">⦿</button>
                 </div>
-                <div id="end-timestamp-container">
-                    <p>End</p>
+            </div>
+            <div class="timestamp-block">
+                <span>End</span>
+                <div class="timestamp-container">
                     <input id="end-timestamp-input" type="time" step="1">
                     <button id="end-timestamp-btn">⦿</button>
                 </div>
-                <div class="ffmpeg-button-wrapper">
-                    <button id="trim-button">✂</button>
-                    <img src="./ubel-cut.png" alt="Trim Icon" id="ubel-icon">
-
-                    <div id="speedup-input-container">
-                        <span class="x-label">x</span>
-                        <input type="number" id="speedup-factor-input" min="1.01" step="0.1" value="2.0">
-                    </div>
-                    <button id="speedup-button">⋙</button>
-                    <img src="./korosensei-speed.png" alt="Speedup Icon" id="korosensei-icon">
+            </div>
+            <div id="ffmpeg-btn-wrapper">
+                <div class="ffmpeg-btn-container" id="trim-inputs-container">
+                    <button id="trim-btn" class="ffmpeg-btn" >✂</button>
+                    <img src="./ubel-cut.png" alt="Trim Icon" class="btn-icon" id="ubel-icon">
+                </div>
+                <div class="ffmpeg-btn-container" id="speedup-inputs-container">
+                    <span class="x-label">x</span>
+                    <input type="number" id="speedup-factor-input" min="1.00" step="0.5" value="2.0">
+                    <button id="speedup-btn" class="ffmpeg-btn" >⋙</button>
+                    <img src="./korosensei-speed.png" alt="Speedup Icon" class="btn-icon" id="korosensei-icon">
                 </div>
             </div>
-        </div>
         <div id="inference-container">
-            <div class="input-div">
+            <div>
                 <h3>Pick an image</h3>
                 <form enctype="multipart/form-data">
                     <input id="input-img" type="file" name="image" accept="image/*">
@@ -88,15 +90,18 @@
                 <button disabled id="inference-video-btn">RUN INFERENCE</button>
             </div>
         </div>
-        <div class="spinner" id="loading-spinner"></div>
-        <div class="spinner-text" id="loading-text">Crafting the video...</div>
-        <footer>
-              <p>
-                  Built by berto ► <br>
-                  <a href="https://github.com/Graffioh" target="_blank">GitHub</a> |
-                  <a href="https://x.com/graffioh" target="_blank">X</a>
-              </p>
-          </footer>
+        <div id="loading-spinner-container">
+            <div class="spinner" id="loading-spinner"></div>
+            <div class="spinner-text" id="loading-text">Crafting the video...</div>
+        </div>
     </main>
+
+    <footer>
+          <p>
+              Built by berto ► <br>
+              <a href="https://github.com/Graffioh" target="_blank">GitHub</a> |
+              <a href="https://x.com/graffioh" target="_blank">X</a>
+          </p>
+    </footer>
 </body>
 </html>
