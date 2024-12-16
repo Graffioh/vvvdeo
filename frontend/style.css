@@ -164,3 +164,7 @@ video {
 #input-video {
     margin-top: 12px;
 }
+
+#download-btn {
+    display: none;
+}

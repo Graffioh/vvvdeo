@@ -63,6 +63,8 @@ const trim = async (file, startTrim, endTrim) => {
   ffmpegMessage.hidden = true;
 };
 
+const downloadButton = document.getElementById("download-btn");
+
 // upload video
 videoInputUpload.addEventListener("change", () => {
   const videoFile = videoInputUpload.files[0];
@@ -76,6 +78,17 @@ videoInputUpload.addEventListener("change", () => {
   const videoURL = URL.createObjectURL(videoFile);
   videoPlayer.src = videoURL;
   videoPlayerContainer.style.display = "block";
+  downloadButton.style.display = "flex";
+});
+
+downloadButton.addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = videoPlayer.src;
+  a.download = "crafted_vvvdeo.mp4";
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(videoPlayer.src);
+  a.remove();
 });
 
 const convertStreamToFile = async () => {
