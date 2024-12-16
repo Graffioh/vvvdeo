@@ -66,8 +66,14 @@ const trim = async (file, startTrim, endTrim) => {
 // upload video
 videoInputUpload.addEventListener("change", () => {
   const videoFile = videoInputUpload.files[0];
-  const videoURL = URL.createObjectURL(videoFile);
 
+  if (videoFile.type !== "video/mp4") {
+    alert("Please upload an MP4 video file only.");
+    videoInputUpload.value = "";
+    return;
+  }
+
+  const videoURL = URL.createObjectURL(videoFile);
   videoPlayer.src = videoURL;
   videoPlayerContainer.style.display = "block";
 });
@@ -226,7 +232,7 @@ speedupButton.addEventListener("click", async () => {
         videoPlayer.src = URL.createObjectURL(speedupVideoblob);
         videoPlayer.load();
 
-        ffmpegInputsContainer.style.display = "block";
+        ffmpegInputsContainer.style.display = "flex";
         loadingSpinnerContainer.style.display = "none";
       } else {
         console.error(
