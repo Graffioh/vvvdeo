@@ -65,7 +65,7 @@ video {
     border-radius: 50%;
     width: 60px;
     height: 60px;
-    animation: spin 1s linear infinite; /* Animation settings */
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -167,4 +167,8 @@ video {
 
 #download-btn {
     display: none;
+}
+
+#trim-btn {
+    margin-top: 22px;
 }
