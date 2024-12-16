@@ -60,11 +60,11 @@ video {
 /* Classes */
 
 .spinner {
-    border: 8px solid #f3f3f3; /* Light grey background */
-    border-top: 6px solid #000; /* Black spinner */
-    border-radius: 50%; /* Makes it circular */
-    width: 60px; /* Width of the spinner */
-    height: 60px; /* Height of the spinner */
+    border: 8px solid #f3f3f3;
+    border-top: 6px solid #000;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
     animation: spin 1s linear infinite; /* Animation settings */
 }
 
@@ -101,6 +101,7 @@ video {
 .btn-icon {
     width: 52px;
     position: absolute;
+    left: 10%;
     opacity: 0;
     transition:
         opacity 0.1s ease,
@@ -134,6 +135,9 @@ video {
 
 #loading-spinner-container {
     display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
 }
 
 #ffmpeg-btn-wrapper {

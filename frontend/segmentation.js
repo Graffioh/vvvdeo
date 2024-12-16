@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("speedupFactor", speedupFactorInput.value);
 
         ffmpegInputsContainer.style.display = "none";
-        loadingSpinnerContainer.style.display = "block";
+        loadingSpinnerContainer.style.display = "flex";
 
         const speedupVideoResponse = await fetch(
           backendUrl + "/video/speedup",
