@@ -4,8 +4,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"veedeo/handlers"
+	"veedeo/notification"
 	"veedeo/storage"
+	"veedeo/video"
+	"veedeo/websocket"
 
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -13,6 +15,15 @@ import (
 )
 
 func main() {
+	h := setupServerHandler()
+
+	log.Println("Server starting on :8080...")
+	if err := http.ListenAndServe(":8080", h); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func setupServerHandler() http.Handler {
 	env := os.Getenv("APP_ENV")
 	if env != "PROD" {
 		err := godotenv.Load()
@@ -38,20 +49,14 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/inference-video", handlers.VideoInferenceHandler)
+	mux.HandleFunc("/video/inference", video.VideoInferenceHandler)
 	mux.HandleFunc("/presigned-url/put", storage.PresignedPutURLHandler)
 	mux.HandleFunc("/presigned-url/get", storage.PresignedGetURLHandler)
-	mux.HandleFunc("/notification/video-upload", handlers.VideoUploadNotificationFromWorkerHandler)
-	mux.HandleFunc("/notification/frames-extraction", handlers.FrameNotificationFromWorkerHandler)
-	mux.HandleFunc("/ws", handlers.WebSocketHandler)
-	//mux.HandleFunc("/ytvideo", handlers.VideoStreamYTHandler)
-	mux.HandleFunc("/video/speedup", handlers.VideoSpeedupHandler)
+	mux.HandleFunc("/notification/video-upload", notification.VideoUploadNotificationFromWorkerHandler)
+	mux.HandleFunc("/notification/frames-extraction", notification.FrameNotificationFromWorkerHandler)
+	mux.HandleFunc("/ws", websocket.WebSocketHandler)
+	mux.HandleFunc("/video/speedup", video.VideoSpeedupHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
-	handler := c.Handler(mux)
-
-	log.Println("Server starting on :8080...")
-	if err := http.ListenAndServe(":8080", handler); err != nil {
-		log.Fatal(err)
-	}
+	return c.Handler(mux)
 }

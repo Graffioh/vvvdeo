@@ -484,7 +484,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
   videoInputUpload.disabled = true;
 
   try {
-    const response = await fetch(BACKEND_URL + "/inference-video", {
+    const response = await fetch(BACKEND_URL + "/video/segment", {
       method: "POST",
       body: formData,
       headers: {
