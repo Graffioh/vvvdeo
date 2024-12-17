@@ -6,8 +6,9 @@ WORKDIR /app
 # Copy the necessary files from the project structure
 COPY . .
 
-# Build the Go app
-RUN go build -mod=vendor -o bin/vvvdeo
+# Generate vendor directory and build
+RUN go mod vendor && \
+    go build -mod=vendor -o bin/vvvdeo
 
 # -- Stage 2 -- #
 # Create the final environment with the latest FFmpeg.
