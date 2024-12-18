@@ -21,7 +21,8 @@ func FfmpegEventsHandler(w http.ResponseWriter, r *http.Request) {
 
 	for msg := range ch {
 		fmt.Println("2")
-		fmt.Fprintf(w, "data: %s\n\n", msg)
+		content := fmt.Sprintf("data: %s\n\n", msg)
+		w.Write([]byte(content))
 		w.(http.Flusher).Flush()
 	}
 }

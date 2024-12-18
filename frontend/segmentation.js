@@ -115,6 +115,9 @@ ffmpegSSE.onmessage = function (event) {
   console.log("sse message received");
   ffmpegMessage.innerHTML = event.data;
 };
+ffmpegSSE.onerror = function () {
+  setTimeout(() => (ffmpegMessage.innerHTML = ""), 1000);
+};
 
 // ffmpeg functionalities
 const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
