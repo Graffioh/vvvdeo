@@ -15,12 +15,8 @@ func FfmpegEventsHandler(w http.ResponseWriter, r *http.Request) {
 	defer SseManager.Unsubscribe(id)
 
 	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-
-	fmt.Println("1")
 
 	for msg := range ch {
-		fmt.Println("2")
 		content := fmt.Sprintf("data: %s\n\n", msg)
 		w.Write([]byte(content))
 		w.(http.Flusher).Flush()

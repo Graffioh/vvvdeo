@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -23,16 +22,12 @@ func (s *SSEManager) Subscribe(id string) chan string {
 	ch := make(chan string, 20)
 	s.subscribers[id] = ch
 
-	fmt.Println("sse subscribe")
-
 	return ch
 }
 
 func (s *SSEManager) Unsubscribe(id string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
-	fmt.Println("sse unsubscribe")
 
 	if ch, ok := s.subscribers[id]; ok {
 		close(ch)
@@ -44,12 +39,9 @@ func (s *SSEManager) Update(message string) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	fmt.Println("sse update")
-
 	for id, ch := range s.subscribers {
 		select {
 		case ch <- message:
-			fmt.Println("sse message")
 		default:
 			close(ch)
 			delete(s.subscribers, id)
