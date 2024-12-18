@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"veedeo/events"
 	"veedeo/notification"
 	"veedeo/storage"
 	"veedeo/video"
@@ -56,6 +57,7 @@ func setupServerHandler() http.Handler {
 	mux.HandleFunc("/notification/frames-extraction", notification.FrameNotificationFromWorkerHandler)
 	mux.HandleFunc("/ws", websocket.WebSocketHandler)
 	mux.HandleFunc("/video/speedup", video.VideoSpeedupHandler)
+	mux.HandleFunc("/ffmpeg-events", events.FfmpegEventsHandler)
 	mux.Handle("/metrics", promhttp.Handler())
 
 	return c.Handler(mux)

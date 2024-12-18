@@ -10,6 +10,7 @@ const videoPlayerContainer = document.getElementById("video-player-container");
 const loadingSpinnerContainer = document.getElementById(
   "loading-spinner-container",
 );
+const ffmpegMessage = document.getElementById("ffmpeg-message");
 
 // ffmpeg wasm trimming
 const BASE_FFMPEG_WASM_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
@@ -17,7 +18,6 @@ const BASE_FFMPEG_WASM_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 let trimmedVideoFile = null;
 let ffmpeg = null;
 const trim = async (file, startTrim, endTrim) => {
-  const ffmpegMessage = document.getElementById("ffmpeg-message");
   if (ffmpeg === null) {
     ffmpeg = new FFmpeg();
     ffmpeg.on("log", ({ message }) => {
@@ -110,6 +110,11 @@ const convertStreamToFile = async () => {
   }
 };
 
+var ffmpegSSE = new EventSource(BACKEND_URL + "/ffmpeg-events");
+ffmpegSSE.onmessage = function (event) {
+  ffmpegMessage.innerHTML = event.data;
+};
+
 // ffmpeg functionalities
 const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
 const showTrimButton = document.getElementById("show-trim-btn");
@@ -165,7 +170,6 @@ const startTimestampBtn = document.getElementById("start-timestamp-btn");
 const endTimestampBtn = document.getElementById("end-timestamp-btn");
 
 startTimestampBtn.addEventListener("click", () => {
-  console.log("YO");
   startTimestampInput.value = secondsToTime(videoPlayer.currentTime);
 });
 
@@ -484,7 +488,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
   videoInputUpload.disabled = true;
 
   try {
-    const response = await fetch(BACKEND_URL + "/video/segment", {
+    const response = await fetch(BACKEND_URL + "/video/inference", {
       method: "POST",
       body: formData,
       headers: {

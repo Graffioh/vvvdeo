@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"veedeo/events"
 	"veedeo/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -290,6 +291,9 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// update 1
+	events.SseManager.Update("Started processing video for speedup...")
+
 	// part 1: cut the video before the interested segment
 	cmd1 := exec.Command("ffmpeg", "-y", "-to", startTime, "-i", tempFile.Name(), "-filter_complex", "[0:v]setpts=PTS-STARTPTS[v];[0:a]aresample=async=1:first_pts=0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", beforePart)
 	output1, err := cmd1.CombinedOutput()
@@ -300,6 +304,9 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// update 2
+	events.SseManager.Update("30%")
+
 	// part 2: cut the video after the interested segment
 	cmd2 := exec.Command("ffmpeg", "-y", "-ss", endTime, "-i", tempFile.Name(), "-filter_complex", "[0:v]setpts=PTS-STARTPTS[v];[0:a]aresample=async=1:first_pts=0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", afterPart)
 	output2, err := cmd2.CombinedOutput()
@@ -309,6 +316,9 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to cut video after segment", http.StatusInternalServerError)
 		return
 	}
+
+	// update 3
+	events.SseManager.Update("60%")
 
 	// part 3: speed up the trimmed part
 	setptsMultiplier := 1 / speedupFactor
@@ -332,6 +342,9 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// update 4
+	events.SseManager.Update("80%")
+
 	// part 4: replace the trimmed part in the original video
 	cmd4 := exec.Command("ffmpeg", "-f", "concat", "-safe", "0", "-i", concatFile, "-c", "copy", finalFile)
 	output4, err := cmd4.CombinedOutput()
@@ -341,6 +354,9 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to concatenate video", http.StatusInternalServerError)
 		return
 	}
+
+	// update final
+	events.SseManager.Update("100%")
 
 	// send the video to the frontend
 	outFile, err := os.Open(finalFile)
