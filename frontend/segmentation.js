@@ -112,6 +112,7 @@ const convertStreamToFile = async () => {
 
 var ffmpegSSE = new EventSource(BACKEND_URL + "/ffmpeg-events");
 ffmpegSSE.onmessage = function (event) {
+  console.log("sse message received");
   ffmpegMessage.innerHTML = event.data;
 };
 
