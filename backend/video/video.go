@@ -292,7 +292,7 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update 1
-	events.SseManager.Update("Started processing video for speedup...")
+	events.SseManager.Update("0%")
 
 	// part 1: cut the video before the interested segment
 	cmd1 := exec.Command("ffmpeg", "-y", "-to", startTime, "-i", tempFile.Name(), "-filter_complex", "[0:v]setpts=PTS-STARTPTS[v];[0:a]aresample=async=1:first_pts=0[a]", "-map", "[v]", "-map", "[a]", "-f", "mp4", beforePart)
