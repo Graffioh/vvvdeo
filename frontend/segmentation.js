@@ -111,15 +111,6 @@ const convertStreamToFile = async () => {
   }
 };
 
-const ffmpegEventSource = new EventSource(BACKEND_URL + "/ffmpeg-events");
-
-ffmpegEventSource.onmessage = function (event) {
-  ffmpegMessage.innerHTML = event.data;
-};
-ffmpegEventSource.onerror = function () {
-  setTimeout(() => (ffmpegMessage.innerHTML = ""), 1000);
-};
-
 // ffmpeg functionalities
 const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
 const showTrimButton = document.getElementById("show-trim-btn");
@@ -140,8 +131,16 @@ showTrimButton.addEventListener("click", () => {
 });
 
 showSpeedupButton.addEventListener("click", () => {
-  ffmpegInputsContainer.style.display = "flex";
+  const ffmpegEventSource = new EventSource(BACKEND_URL + "/ffmpeg-events");
 
+  ffmpegEventSource.onmessage = function (event) {
+    ffmpegMessage.innerHTML = event.data;
+  };
+  ffmpegEventSource.onerror = function () {
+    setTimeout(() => (ffmpegMessage.innerHTML = ""), 1000);
+  };
+
+  ffmpegInputsContainer.style.display = "flex";
   speedupButton.style.display = "block";
   trimButtonFast.style.display = "none";
   speedupFactorContainer.style.display = "block";
