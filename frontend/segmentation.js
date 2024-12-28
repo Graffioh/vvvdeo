@@ -110,9 +110,9 @@ const convertStreamToFile = async () => {
   }
 };
 
-var ffmpegEventSource = new EventSource(BACKEND_URL + "/ffmpeg-events");
+const ffmpegEventSource = new EventSource(BACKEND_URL + "/ffmpeg-events");
+
 ffmpegEventSource.onmessage = function (event) {
-  console.log("sse message received");
   ffmpegMessage.innerHTML = event.data;
 };
 ffmpegEventSource.onerror = function () {
