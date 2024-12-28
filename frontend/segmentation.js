@@ -18,13 +18,14 @@ const BASE_FFMPEG_WASM_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 let trimmedVideoFile = null;
 let ffmpeg = null;
 const trim = async (file, startTrim, endTrim) => {
+  loadingSpinnerContainer.style.display = "flex";
   if (ffmpeg === null) {
     ffmpeg = new FFmpeg();
     ffmpeg.on("log", ({ message }) => {
       console.log(message);
     });
     ffmpeg.on("progress", ({ progress, time }) => {
-      ffmpegMessage.innerHTML = `${progress * 100} % (transcoded time: ${time / 1000000} s)`;
+      ffmpegMessage.innerHTML = `${progress * 100} %`;
     });
     await ffmpeg.load({
       coreURL: await toBlobURL(
@@ -60,7 +61,7 @@ const trim = async (file, startTrim, endTrim) => {
 
   videoPlayer.style.display = "block";
   videoPlayer.src = URL.createObjectURL(trimmedVideoFile);
-  ffmpegMessage.hidden = true;
+  loadingSpinnerContainer.style.display = "none";
 };
 
 const downloadButton = document.getElementById("download-btn");
