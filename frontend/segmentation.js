@@ -8,7 +8,7 @@ const videoPlayer = document.getElementById("video-player");
 const videoInputUpload = document.getElementById("input-video");
 const videoPlayerContainer = document.getElementById("video-player-container");
 const loadingSpinnerContainer = document.getElementById(
-  "loading-spinner-container",
+  "loading-spinner-container"
 );
 const ffmpegMessage = document.getElementById("ffmpeg-message");
 
@@ -30,11 +30,11 @@ const trim = async (file, startTrim, endTrim) => {
     await ffmpeg.load({
       coreURL: await toBlobURL(
         `${BASE_FFMPEG_WASM_URL}/ffmpeg-core.js`,
-        "text/javascript",
+        "text/javascript"
       ),
       wasmURL: await toBlobURL(
         `${BASE_FFMPEG_WASM_URL}/ffmpeg-core.wasm`,
-        "application/wasm",
+        "application/wasm"
       ),
     });
   }
@@ -118,7 +118,7 @@ const trimButtonFast = document.getElementById("trim-btn");
 const showSpeedupButton = document.getElementById("show-speedup-btn");
 const speedupButton = document.getElementById("speedup-btn");
 const speedupFactorContainer = document.getElementById(
-  "speedup-inputs-container",
+  "speedup-inputs-container"
 );
 const speedupFactorInput = document.getElementById("speedup-factor-input");
 
@@ -192,24 +192,49 @@ endTimestampBtn.addEventListener("click", () => {
   endTimestampInput.value = secondsToTime(videoPlayer.currentTime);
 });
 
+async function getVideoFile() {
+  let videoInputFile;
+  const videoSrc = videoPlayer.src || videoPlayer.querySelector("source")?.src;
+
+  if (videoSrc) {
+    try {
+      const response = await fetch(videoSrc);
+      const videoBlob = await response.blob();
+      videoInputFile = new File([videoBlob], "video.mp4", {
+        type: videoBlob.type,
+      });
+    } catch (error) {
+      console.error("Failed to fetch the video from <video> element:", error);
+      return null;
+    }
+  } else {
+    videoInputFile = videoInputUpload.files[0];
+
+    if (!videoInputFile) {
+      console.error("No video source or uploaded file found!");
+      return null;
+    }
+  }
+
+  return videoInputFile;
+}
+
 trimButtonFast.addEventListener("click", async () => {
   const startTrimValue = startTimestampInput.value;
   const endTrimValue = endTimestampInput.value;
 
-  const startTrimSeconds = timeToSeconds(startTrimValue);
-  const endTrimSeconds = timeToSeconds(endTrimValue);
+  // const startTrimSeconds = timeToSeconds(startTrimValue);
+  // const endTrimSeconds = timeToSeconds(endTrimValue);
 
   //if (endTrimSeconds - startTrimSeconds > 10) {
   //  alert("Video needs to be maximum 10 seconds long.");
   //  return;
   //}
 
-  if (videoInputUpload.files[0]) {
-    await trim(videoInputUpload.files[0], startTrimValue, endTrimValue);
-  } else {
-    // for youtube downloaded video (wip)
-    const videoStreamFile = await convertStreamToFile();
-    await trim(videoStreamFile, startTrimValue, endTrimValue);
+  const videoInputFile = await getVideoFile();
+
+  if (videoInputFile) {
+    await trim(videoInputFile, startTrimValue, endTrimValue);
   }
 
   console.log("GIVE ME CREDITS FOR INFERENCE");
@@ -230,7 +255,7 @@ speedupButton.addEventListener("click", async () => {
 
   const endTrimValue = endTimestampInput.value;
 
-  const videoInputFile = videoInputUpload.files[0];
+  const videoInputFile = await getVideoFile();
 
   if (videoInputFile) {
     try {
@@ -258,7 +283,7 @@ speedupButton.addEventListener("click", async () => {
       } else {
         console.error(
           "Error fetching speedup video. Status:",
-          speedupVideoResponse.status,
+          speedupVideoResponse.status
         );
         const errorText = await speedupVideoResponse.text();
         console.error("Error details:", errorText);
@@ -278,7 +303,7 @@ speedupButton.addEventListener("click", async () => {
 // VIDEO SEGMENTATION
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 const inferenceVideoButtonElement = document.getElementById(
-  "inference-video-btn",
+  "inference-video-btn"
 );
 let coordinates = [];
 let labels = [];
@@ -481,7 +506,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     JSON.stringify({
       coordinates: coordinates,
       labels: labels,
-    }),
+    })
   );
 
   loadingSpinnerContainer.style.display = "block";
@@ -503,7 +528,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`,
+        errorData.error || `HTTP error! status: ${response.status}`
       );
     }
 
