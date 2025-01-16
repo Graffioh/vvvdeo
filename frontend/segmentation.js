@@ -433,29 +433,29 @@ async function connectToWebSocket(videoKey) {
   });
 }
 
-async function uploadVideoAndConnectToWebsocket(videoFile) {
-  videoPreviewMessage.hidden = false;
-
-  // upload video to r2 bucket with presigned url
-  const presignedPutUrl = BACKEND_URL + "/presigned-url/put";
-  const presignedPutResponse = await fetch(presignedPutUrl, {
-    method: "POST",
-  });
-
-  const { presignedUrl: uploadUrl, key: newVideoKey } =
-    await presignedPutResponse.json();
-
-  await fetch(uploadUrl, {
-    method: "PUT",
-    body: videoFile,
-  });
-
-  videoKey = newVideoKey;
-
-  localStorage.setItem("videoKey", videoKey);
-
-  await connectToWebSocket(videoKey);
-}
+//async function uploadVideoAndConnectToWebsocket(videoFile) {
+//  videoPreviewMessage.hidden = false;
+//
+//  // upload video to r2 bucket with presigned url
+//  const presignedPutUrl = BACKEND_URL + "/presigned-url/put";
+//  const presignedPutResponse = await fetch(presignedPutUrl, {
+//    method: "POST",
+//  });
+//
+//  const { presignedUrl: uploadUrl, key: newVideoKey } =
+//    await presignedPutResponse.json();
+//
+//  await fetch(uploadUrl, {
+//    method: "PUT",
+//    body: videoFile,
+//  });
+//
+//  videoKey = newVideoKey;
+//
+//  localStorage.setItem("videoKey", videoKey);
+//
+//  await connectToWebSocket(videoKey);
+//}
 
 // INFERENCE
 //
