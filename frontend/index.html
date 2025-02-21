@@ -1,110 +1,163 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>vvvdeo</title>
+        <title>vvvdeo</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <header>
-        <h1>vvvdeo</h1>
-    </header>
-    <main>
-        <div class="div-section">
-            <h3>Download video via link</h3>
-            <p style="font-size: 14px; color: gray;">thanks to <a href="https://x.com/uwukko">wukko</a> and <a href="https://cobalt.tools">cobalt</a> ♡</p>
-            <div class="iframe-container">
-                <iframe
-                    src="https://cobalt.tools/"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                ></iframe>
-            </div>
-            <h3>Pick a video</h3>
-            <span style="font-size: 14px; color: gray;">(only mp4 supported)</span>
-            <form enctype="multipart/form-data">
-                <input id="input-video" type="file" name="video" accept="video/mp4">
-            </form>
-        </div>
-        <button id="download-btn">Download</button>
-        <div id="video-player-container" class="div-section">
-            <div id="labels-container" style="position: relative;">
-            </div>
-            <video id="video-player" controls width="1080"></video>
-            <div hidden id="video-preview-msg">
-                    Video preview, frames are being extracted for inference...
+        <link rel="stylesheet" href="style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <header>
+            <h1>vvvdeo</h1>
+        </header>
+        <main>
+            <div class="div-section">
+                <h3>Download video via link</h3>
+                <p style="font-size: 14px; color: gray">
+                    thanks to <a href="https://x.com/uwukko">wukko</a> and
+                    <a href="https://cobalt.tools">cobalt</a> ♡
+                </p>
+                <div class="iframe-container">
+                    <iframe
+                        src="https://cobalt.tools/"
+                        style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                        "
+                    ></iframe>
                 </div>
-            <div id="coordinates-shape-container"></div>
-            <div id="show-btn-container" class="div-section">
-                <button id="show-trim-btn">Trim</button>
-                <button id="show-speedup-btn">Speedup</button>
-                <button id="show-segment-btn">Segment (give me credits for gpu)</button>
-            </div>
-            <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
-        </div>
-        <div id="ffmpeg-container" class="div-section">
-            <div class="timestamp-block">
-                <span>Start</span>
-                <div class="timestamp-container">
-                    <input id="start-timestamp-input" type="time" step="1">
-                    <button id="start-timestamp-btn">⦿</button>
-                </div>
-            </div>
-            <div class="timestamp-block">
-                <span>End</span>
-                <div class="timestamp-container">
-                    <input id="end-timestamp-input" type="time" step="1">
-                    <button id="end-timestamp-btn">⦿</button>
-                </div>
-            </div>
-            <div id="ffmpeg-btn-wrapper">
-                <div class="ffmpeg-btn-container" id="trim-inputs-container">
-                    <button id="trim-btn" class="ffmpeg-btn" >✂</button>
-                    <img src="./ubel-cut.png" alt="Trim Icon" class="btn-icon" id="ubel-icon">
-                </div>
-                <div class="ffmpeg-btn-container" id="speedup-inputs-container">
-                    <span class="x-label">x</span>
-                    <input type="number" id="speedup-factor-input" min="1.00" step="0.5" value="2.0">
-                    <button id="speedup-btn" class="ffmpeg-btn" >⋙</button>
-                    <img src="./korosensei-speed.png" alt="Speedup Icon" class="btn-icon" id="korosensei-icon">
-                </div>
-            </div>
-        </div>
-        <div id="inference-container">
-            <div>
-                <h3>Pick an image</h3>
+                <h3>Pick a video</h3>
+                <span style="font-size: 14px; color: gray"
+                    >(only mp4 supported)</span
+                >
                 <form enctype="multipart/form-data">
-                    <input id="input-img" type="file" name="image" accept="image/*">
-                    <br></br>
+                    <input
+                        id="input-video"
+                        type="file"
+                        name="video"
+                        accept="video/mp4"
+                    />
                 </form>
             </div>
-            <div class="images-grid">
-                <img id="img-preview" class="preview">
+            <button id="download-btn">Download</button>
+            <div id="video-player-container" class="div-section">
+                <div id="labels-container" style="position: relative"></div>
+                <video id="video-player" controls width="1080"></video>
+                <div hidden id="video-preview-msg">
+                    Video preview, frames are being extracted for inference...
+                </div>
+                <div id="coordinates-shape-container"></div>
+                <div id="show-btn-container" class="div-section">
+                    <button id="show-trim-btn">Trim</button>
+                    <button id="show-speedup-btn">Speedup</button>
+                    <button id="show-segment-btn">
+                        Segment (give me credits for gpu)
+                    </button>
+                </div>
+                <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
             </div>
-            <div id="btn-labels-container">
-                <button id="seg-add">Add area</button>
-                <button id="seg-excl">Exclude area</button>
+            <div id="ffmpeg-container" class="div-section">
+                <div class="timestamp-block">
+                    <span>Start</span>
+                    <div class="timestamp-container">
+                        <input
+                            id="start-timestamp-input"
+                            type="time"
+                            step="1"
+                        />
+                        <button id="start-timestamp-btn">⦿</button>
+                    </div>
+                </div>
+                <div class="timestamp-block">
+                    <span>End</span>
+                    <div class="timestamp-container">
+                        <input id="end-timestamp-input" type="time" step="1" />
+                        <button id="end-timestamp-btn">⦿</button>
+                    </div>
+                </div>
+                <div id="ffmpeg-btn-wrapper">
+                    <div
+                        class="ffmpeg-btn-container"
+                        id="trim-inputs-container"
+                    >
+                        <button id="trim-btn" class="ffmpeg-btn">✂</button>
+                        <img
+                            src="./ubel-cut.png"
+                            alt="Trim Icon"
+                            class="btn-icon"
+                            id="ubel-icon"
+                        />
+                    </div>
+                    <div
+                        class="ffmpeg-btn-container"
+                        id="speedup-inputs-container"
+                    >
+                        <span class="x-label">x</span>
+                        <input
+                            type="number"
+                            id="speedup-factor-input"
+                            min="1.00"
+                            step="0.5"
+                            value="2.0"
+                        />
+                        <button id="speedup-btn" class="ffmpeg-btn">⋙</button>
+                        <img
+                            src="./korosensei-speed.png"
+                            alt="Speedup Icon"
+                            class="btn-icon"
+                            id="korosensei-icon"
+                        />
+                    </div>
+                </div>
             </div>
-            <button id="inference-video-btn">RUN INFERENCE</button>
+            <div id="inference-container">
+                <div class="upload-section">
+                    <h3>Pick an image</h3>
+                    <form enctype="multipart/form-data">
+                        <input
+                            id="input-img"
+                            type="file"
+                            name="image"
+                            accept="image/*"
+                        />
+                    </form>
+                </div>
+                <div class="images-grid">
+                    <img id="img-preview" class="preview" />
+                </div>
+                <div id="btn-labels-container">
+                    <button id="seg-add">Add area</button>
+                    <button id="seg-excl">Exclude area</button>
+                </div>
+                <button id="inference-video-btn">RUN INFERENCE</button>
+            </div>
+        </main>
+        <div id="loading-spinner-container">
+            <div class="spinner" id="loading-spinner"></div>
+            <p id="ffmpeg-message"></p>
+            <div class="spinner-text" id="loading-text">
+                Crafting the video...
+            </div>
         </div>
-    </main>
-    <div id="loading-spinner-container">
-        <div class="spinner" id="loading-spinner"></div>
-        <p id="ffmpeg-message"></p>
-        <div class="spinner-text" id="loading-text">Crafting the video...</div>
-    </div>
-    <footer>
-          <p>
-              Built by berto ► <br>
-              <a href="https://github.com/Graffioh" target="_blank">GitHub</a> |
-              <a href="https://x.com/graffioh" target="_blank">X</a>
-          </p>
-    </footer>
-</body>
-<script type="module" src="segmentation.js" defer></script>
+        <footer>
+            <p>
+                Built by berto ► <br />
+                <a href="https://github.com/Graffioh" target="_blank">GitHub</a>
+                |
+                <a href="https://x.com/graffioh" target="_blank">X</a>
+            </p>
+        </footer>
+    </body>
+    <script type="module" src="segmentation.js" defer></script>
 </html>

@@ -129,6 +129,8 @@ showTrimButton.addEventListener("click", () => {
   speedupButton.style.display = "none";
   trimButtonFast.style.display = "block";
   speedupFactorContainer.style.display = "none";
+
+  inferenceContainer.style.display = "none";
 });
 
 showSpeedupButton.addEventListener("click", () => {
@@ -145,6 +147,8 @@ showSpeedupButton.addEventListener("click", () => {
   speedupButton.style.display = "block";
   trimButtonFast.style.display = "none";
   speedupFactorContainer.style.display = "block";
+
+  inferenceContainer.style.display = "none";
 });
 
 const inferenceContainer = document.getElementById("inference-container");
@@ -350,13 +354,13 @@ let activeLabel = null;
 const updateLabelButtonUI = () => {
   if (activeLabel === "positive") {
     document.body.style.cursor = "crosshair";
-    addPositiveLabelButton.style.color = "black";
+    addPositiveLabelButton.style.color = "green";
     addNegativeLabelButton.style.color = "white";
     isVideoPlayable = false;
   } else if (activeLabel === "negative") {
     document.body.style.cursor = "not-allowed";
     addPositiveLabelButton.style.color = "white";
-    addNegativeLabelButton.style.color = "black";
+    addNegativeLabelButton.style.color = "red";
     isVideoPlayable = false;
   } else {
     document.body.style.cursor = "default";
@@ -544,7 +548,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
 
     coordinates = [];
     labels = [];
-    shapesContainer.innerHTML = "";
+    labelsContainer.innerHTML = "";
     addPositiveLabelButton.disabled = false;
     addNegativeLabelButton.disabled = false;
     imageInput.disabled = false;

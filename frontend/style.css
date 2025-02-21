@@ -1,5 +1,4 @@
 /*HTML elements*/
-
 main {
     margin-left: auto;
     margin-right: auto;
@@ -58,7 +57,6 @@ video {
 }
 
 /* Classes */
-
 .spinner {
     border: 8px solid #f3f3f3;
     border-top: 6px solid #000;
@@ -126,12 +124,6 @@ video {
     overflow: hidden;
 }
 
-@media screen and (max-width: 600px) {
-    .iframe-container {
-        padding-bottom: 150%;
-    }
-}
-
 .iframe-container iframe {
     position: absolute;
     top: 0;
@@ -140,22 +132,25 @@ video {
     height: 100%;
 }
 
-.circle {
+/* Shape styles */
+.circle,
+.cross {
     position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.circle {
     width: 14px;
     height: 14px;
     background-color: #00ff00;
     border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
 }
 
 .cross {
-    position: absolute;
     width: 20px;
     height: 20px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
 }
 
 .cross::before,
@@ -178,8 +173,21 @@ video {
     transform: translateY(-50%) rotate(-45deg);
 }
 
-/* IDs */
+/* Control wrapper styles */
+.controls-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+}
 
+/* Image preview styles */
+.images-grid {
+    width: 300px;
+    margin-top: 10px;
+}
+
+/* IDs */
 #video-player-container {
     display: none;
     flex-direction: column;
@@ -191,6 +199,8 @@ video {
 
 #inference-container {
     display: none;
+    flex-direction: column;
+    gap: 10px;
 }
 
 #loading-spinner-container {
@@ -201,7 +211,7 @@ video {
 }
 
 #ffmpeg-btn-wrapper {
-    pisition: relative;
+    position: relative;
 }
 
 #show-btn-container {
@@ -239,8 +249,40 @@ video {
     height: 100%;
 }
 
-.circle,
-.cross {
-    position: absolute;
-    z-index: 10;
+#btn-labels-container {
+    display: flex;
+    gap: 10px;
+}
+
+#inference-video-btn {
+    padding: 8px 16px;
+    font-size: 1em;
+    font-weight: bold;
+    letter-spacing: 1px;
+    width: 250px;
+}
+
+#seg-add,
+#seg-excl {
+    min-width: 120px;
+    padding: 8px 16px;
+}
+
+#img-preview {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: contain;
+    display: none;
+}
+
+#input-img {
+    margin-bottom: 10px;
+}
+
+/* Media Queries */
+@media screen and (max-width: 600px) {
+    .iframe-container {
+        padding-bottom: 150%;
+    }
 }
