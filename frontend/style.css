@@ -120,16 +120,15 @@ video {
 
 .iframe-container {
     position: relative;
-    padding-bottom: 56.25%; /* Default 16:9 aspect ratio */
+    padding-bottom: 56.25%;
     max-width: 700px;
     height: 0;
     overflow: hidden;
 }
 
-/* Media query for mobile devices */
 @media screen and (max-width: 600px) {
     .iframe-container {
-        padding-bottom: 150%; /* Increased height for mobile, adjust this value as needed */
+        padding-bottom: 150%;
     }
 }
 
@@ -139,6 +138,44 @@ video {
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+.circle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background-color: #00ff00;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.cross {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.cross::before,
+.cross::after {
+    content: "";
+    position: absolute;
+    background-color: #ff0000;
+    width: 20px;
+    height: 4px;
+    top: 50%;
+    left: 0;
+    transform-origin: center;
+}
+
+.cross::before {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.cross::after {
+    transform: translateY(-50%) rotate(-45deg);
 }
 
 /* IDs */
@@ -194,4 +231,16 @@ video {
 
 #trim-btn {
     margin-top: 22px;
+}
+
+#labels-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.circle,
+.cross {
+    position: absolute;
+    z-index: 10;
 }

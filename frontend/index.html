@@ -33,6 +33,8 @@
         </div>
         <button id="download-btn">Download</button>
         <div id="video-player-container" class="div-section">
+            <div id="labels-container" style="position: relative;">
+            </div>
             <video id="video-player" controls width="1080"></video>
             <div hidden id="video-preview-msg">
                     Video preview, frames are being extracted for inference...
@@ -88,9 +90,7 @@
                 <button id="seg-add">Add area</button>
                 <button id="seg-excl">Exclude area</button>
             </div>
-            <div id="inf-btn-container">
-                <button id="inference-video-btn">RUN INFERENCE</button>
-            </div>
+            <button id="inference-video-btn">RUN INFERENCE</button>
         </div>
     </main>
     <div id="loading-spinner-container">

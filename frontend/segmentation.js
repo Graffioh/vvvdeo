@@ -317,7 +317,7 @@ const inferenceVideoButtonElement = document.getElementById(
 );
 let coordinates = [];
 let labels = [];
-const shapesContainer = document.getElementById("shapes-container");
+const labelsContainer = document.getElementById("labels-container");
 
 const addPositiveLabelButton = document.getElementById("seg-add");
 const addNegativeLabelButton = document.getElementById("seg-excl");
@@ -342,7 +342,7 @@ function addPoint(event, shapeType, label) {
   shape.className = shapeType;
   shape.style.left = `${x}px`;
   shape.style.top = `${y}px`;
-  shapesContainer.appendChild(shape);
+  labelsContainer.appendChild(shape);
 }
 
 let activeLabel = null;
@@ -382,7 +382,7 @@ videoPlayer.addEventListener("click", (event) => {
     if (activeLabel === "positive") {
       addPoint(event, "circle", 1);
     } else {
-      addPoint(event, "square", 0);
+      addPoint(event, "cross", 0);
     }
   }
 });
