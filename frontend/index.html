@@ -20,8 +20,8 @@
             <h3>Download video via link</h3>
             <p style="font-size: 14px; color: gray;">thanks to <a href="https://x.com/uwukko">wukko</a> and <a href="https://cobalt.tools">cobalt</a> ♡</p>
             <div class="iframe-container">
-                <iframe 
-                    src="https://cobalt.tools/" 
+                <iframe
+                    src="https://cobalt.tools/"
                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
                 ></iframe>
             </div>
@@ -41,7 +41,7 @@
             <div id="show-btn-container" class="div-section">
                 <button id="show-trim-btn">Trim</button>
                 <button id="show-speedup-btn">Speedup</button>
-                <button disabled>Segment (give me credits for gpu)</button>
+                <button id="show-segment-btn">Segment (give me credits for gpu)</button>
             </div>
             <!--<p id="video-length-msg">(max video length: 10 seconds)</p>-->
         </div>
@@ -72,6 +72,7 @@
                     <img src="./korosensei-speed.png" alt="Speedup Icon" class="btn-icon" id="korosensei-icon">
                 </div>
             </div>
+        </div>
         <div id="inference-container">
             <div>
                 <h3>Pick an image</h3>
@@ -84,11 +85,11 @@
                 <img id="img-preview" class="preview">
             </div>
             <div id="btn-labels-container">
-                <button disabled id="seg-add">Add area</button>
-                <button disabled id="seg-excl">Exclude area</button>
+                <button id="seg-add">Add area</button>
+                <button id="seg-excl">Exclude area</button>
             </div>
             <div id="inf-btn-container">
-                <button disabled id="inference-video-btn">RUN INFERENCE</button>
+                <button id="inference-video-btn">RUN INFERENCE</button>
             </div>
         </div>
     </main>
