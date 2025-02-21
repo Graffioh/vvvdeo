@@ -42,59 +42,59 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_str = "facebook/sam2-hiera-base-plus" if torch.cuda.is_available() else "facebook/sam2-hiera-tiny"
 predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 
-def get_path_from_presignedurl(key) -> str:
-        url = f"http://localhost:8080/presigned-url/get?key={key}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            response_data = response.json()
+# def get_path_from_presignedurl(key) -> str:
+#         url = f"http://localhost:8080/presigned-url/get?key={key}"
+#         try:
+#             response = requests.get(url)
+#             response.raise_for_status()
+#             response_data = response.json()
 
-            path = response_data.get('presignedUrl')
-            if not path:
-                app.logger.error("Response did not contain presignedUrl!")
-                raise RuntimeError("Response did not contain 'presignedUrl'.")
-            return path
-        except requests.RequestException as e:
-            app.logger.error("Failed to fetch presigned URL!")
-            raise RuntimeError(f"Failed to fetch presigned URL: {e}")
+#             path = response_data.get('presignedUrl')
+#             if not path:
+#                 app.logger.error("Response did not contain presignedUrl!")
+#                 raise RuntimeError("Response did not contain 'presignedUrl'.")
+#             return path
+#         except requests.RequestException as e:
+#             app.logger.error("Failed to fetch presigned URL!")
+#             raise RuntimeError(f"Failed to fetch presigned URL: {e}")
 
-def download_video(video_url, temp_dir):
-    local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
+# def download_video(video_url, temp_dir):
+#     local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
 
-    try:
-        with requests.get(video_url, stream=True) as response:
-            response.raise_for_status()
-            with open(local_video_path, 'wb') as f:
-                shutil.copyfileobj(response.raw, f)
-    except requests.exceptions.RequestException as e:
-        app.logger.exception("Failed to download the original video")
-        raise ValueError(f"Failed to download video: {e}")
+#     try:
+#         with requests.get(video_url, stream=True) as response:
+#             response.raise_for_status()
+#             with open(local_video_path, 'wb') as f:
+#                 shutil.copyfileobj(response.raw, f)
+#     except requests.exceptions.RequestException as e:
+#         app.logger.exception("Failed to download the original video")
+#         raise ValueError(f"Failed to download video: {e}")
 
-    return local_video_path
+#     return local_video_path
 
-def download_and_extract_zip(zip_url, temp_dir):
-    zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
-    extract_dir = os.path.join(temp_dir, "frames")
+# def download_and_extract_zip(zip_url, temp_dir):
+#     zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
+#     extract_dir = os.path.join(temp_dir, "frames")
 
-    try:
-        with requests.get(zip_url, stream=True) as response:
-            response.raise_for_status()
-            with open(zip_path, 'wb') as f:
-                shutil.copyfileobj(response.raw, f)
-    except requests.exceptions.RequestException as e:
-        app.logger.exception("Failed to download zip file from r2 storage!")
-        raise ValueError(f"Failed to download zip file: {e}")
+#     try:
+#         with requests.get(zip_url, stream=True) as response:
+#             response.raise_for_status()
+#             with open(zip_path, 'wb') as f:
+#                 shutil.copyfileobj(response.raw, f)
+#     except requests.exceptions.RequestException as e:
+#         app.logger.exception("Failed to download zip file from r2 storage!")
+#         raise ValueError(f"Failed to download zip file: {e}")
 
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-    except zipfile.BadZipFile:
-        app.logger.exception("The downloaded file is not a valid .zip archive")
-        raise ValueError("The downloaded file is not a valid .zip archive")
+#     try:
+#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#             zip_ref.extractall(extract_dir)
+#     except zipfile.BadZipFile:
+#         app.logger.exception("The downloaded file is not a valid .zip archive")
+#         raise ValueError("The downloaded file is not a valid .zip archive")
 
-    app.logger.info("Zip extracted sucessfully")
+#     app.logger.info("Zip extracted sucessfully")
 
-    return extract_dir
+#     return extract_dir
 
 def load_and_prepare_image(image_path, required_format="RGBA"):
     if not os.path.exists(image_path):
@@ -283,15 +283,15 @@ def segment():
             app.logger.debug("Temp directory created: %s", temp_dir)
 
             # get r2 bucket object key
-            file_key = request.form.get('fileKey')
-            if not file_key:
-                app.logger.error("Missing 'file_key' in request body")
-                return jsonify({"error": "Missing 'file_key' in request body"}), 400
-            video_name = file_key
+            # file_key = request.form.get('fileKey')
+            # if not file_key:
+            #     app.logger.error("Missing 'file_key' in request body")
+            #     return jsonify({"error": "Missing 'file_key' in request body"}), 400
+            # video_name = file_key
 
             # fetch video and frames with presigned urls
-            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
-            local_video_path = download_video(cloudflare_video_path, temp_dir)
+            # cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
+            # local_video_path = download_video(cloudflare_video_path, temp_dir)
 
             try:
                 video_info = sv.VideoInfo.from_video_path(local_video_path)
@@ -303,12 +303,13 @@ def segment():
                 app.logger.exception(f"Video file not found: {video_name}")
                 raise ValueError(f"Video file not found: {video_name}") from e
 
-            cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
-            local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
+            # cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
+            # local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
 
             #device_str = "cuda" if torch.cuda.is_available() else "cpu"
             #with torch.inference_mode(), torch.autocast(device_str, dtype=torch.bfloat16):
             # inference the initial state
+            #
             inference_state = predictor.init_state(video_path=local_frames_path)
             predictor.reset_state(inference_state)
             app.logger.info("Inference state initialized and reset")
