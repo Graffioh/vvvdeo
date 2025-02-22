@@ -293,6 +293,11 @@ def segment():
             # cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
             # local_video_path = download_video(cloudflare_video_path, temp_dir)
 
+
+            video_name = "to_segment.mp4"
+            local_video_path = "./video/" + video_name
+            local_frames_path = "./frames/"
+
             try:
                 video_info = sv.VideoInfo.from_video_path(local_video_path)
                 app.logger.debug("Video info successfully retrieved")
@@ -310,9 +315,14 @@ def segment():
             #with torch.inference_mode(), torch.autocast(device_str, dtype=torch.bfloat16):
             # inference the initial state
             #
-            inference_state = predictor.init_state(video_path=local_frames_path)
-            predictor.reset_state(inference_state)
-            app.logger.info("Inference state initialized and reset")
+            app.logger.debug("Initializing SAM2 predictor with frames path: %s", local_frames_path)
+            try:
+                inference_state = predictor.init_state(video_path=local_frames_path)
+                predictor.reset_state(inference_state)
+                app.logger.info("Inference state initialized and reset")
+            except Exception as e:
+                app.logger.exception(f"Failed to initialize or reset SAM2 predictor: {str(e)}")
+                return jsonify({"error": f"Failed to initialize SAM2 predictor: {str(e)}"}), 500
 
             # get points and labels from request
             segmentation_data = request.form.get("segmentationData")

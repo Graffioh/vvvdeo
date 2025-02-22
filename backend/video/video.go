@@ -483,14 +483,12 @@ type Points struct {
 // }
 
 func saveVideoToDirectory(file multipart.File, filename string) error {
-	// Create the directory if it doesn't exist
 	videoDir := "../sam2seg/video"
 	err := os.MkdirAll(videoDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create video directory: %w", err)
 	}
 
-	// Create the destination file
 	videoPath := filepath.Join(videoDir, filename)
 	dst, err := os.Create(videoPath)
 	if err != nil {
@@ -498,7 +496,6 @@ func saveVideoToDirectory(file multipart.File, filename string) error {
 	}
 	defer dst.Close()
 
-	// Copy the uploaded file to the destination
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		return fmt.Errorf("failed to save video file: %w", err)
@@ -508,19 +505,17 @@ func saveVideoToDirectory(file multipart.File, filename string) error {
 }
 
 func extractFramesToDirectory(videoPath string) error {
-	// Create the frames directory if it doesn't exist
 	framesDir := "../sam2seg/frames"
 	err := os.MkdirAll(framesDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create frames directory: %w", err)
 	}
 
-	// Use ffmpeg to extract frames
 	cmd := exec.Command("ffmpeg",
 		"-i", videoPath,
-		"-vf", "fps=1", // Extract 1 frame per second
-		"-frame_pts", "1",
-		filepath.Join(framesDir, "frame_%d.jpg"))
+		"-q:v", "2",
+		"-start_number", "0",
+		fmt.Sprintf("%s/%%05d.jpg", framesDir))
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -531,13 +526,11 @@ func extractFramesToDirectory(videoPath string) error {
 }
 
 func cleanDirectories() error {
-	// Clean video directory
 	videoDir := "../sam2seg/video"
 	if err := os.RemoveAll(videoDir); err != nil {
 		return fmt.Errorf("failed to clean video directory: %w", err)
 	}
 
-	// Clean frames directory
 	framesDir := "../sam2seg/frames"
 	if err := os.RemoveAll(framesDir); err != nil {
 		return fmt.Errorf("failed to clean frames directory: %w", err)
@@ -618,6 +611,12 @@ func VideoLocalInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(imagePart, imageFile)
 	if err != nil {
 		http.Error(w, "Error writing file to form file", http.StatusInternalServerError)
+		return
+	}
+
+	err = writer.Close()
+	if err != nil {
+		http.Error(w, "Error closing multipart writer", http.StatusInternalServerError)
 		return
 	}
 
