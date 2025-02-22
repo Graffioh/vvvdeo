@@ -499,7 +499,7 @@ imageInput.addEventListener("change", (event) => {
 //
 inferenceVideoButtonElement.addEventListener("click", async () => {
   const imageFile = imageInput.files[0];
-  const videoFile = videoInputUpload.files[0];
+  const videoFile = await getVideoFile();
 
   if (!imageFile) {
     alert("Please select an image.");
