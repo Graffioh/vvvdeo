@@ -70,7 +70,6 @@ let iframeLoaded = false;
 
 toggleIframeBtn.addEventListener("click", () => {
   if (!iframeLoaded) {
-    // Create and inject the iframe
     const iframe = document.createElement("iframe");
     iframe.src = "https://cobalt.tools/";
     iframe.style.position = "absolute";
@@ -80,18 +79,16 @@ toggleIframeBtn.addEventListener("click", () => {
     iframe.style.height = "100%";
     iframeContainer.appendChild(iframe);
 
-    // Show the container and update state
     iframeContainer.style.display = "block";
     iframeLoaded = true;
-    toggleIframeBtn.classList.add("active"); // Add active class for up arrow
+    toggleIframeBtn.classList.add("active");
   } else {
-    // Toggle visibility
     if (iframeContainer.style.display === "block") {
       iframeContainer.style.display = "none";
-      toggleIframeBtn.classList.remove("active"); // Remove active class for down arrow
+      toggleIframeBtn.classList.remove("active");
     } else {
       iframeContainer.style.display = "block";
-      toggleIframeBtn.classList.add("active"); // Add active class for up arrow
+      toggleIframeBtn.classList.add("active");
     }
   }
 });
@@ -154,6 +151,37 @@ const speedupFactorContainer = document.getElementById(
 );
 const speedupFactorInput = document.getElementById("speedup-factor-input");
 const showSegmentButton = document.getElementById("show-segment-btn");
+
+// Easter egg to enable the Segment button after 3 vvvdeo header clicks
+const vvvdeoHeader = document.getElementById("vvvdeo-header");
+let clickCount = 0;
+let clickTimeout = null;
+
+vvvdeoHeader.addEventListener("click", () => {
+  clickCount++;
+
+  if (clickCount === 1) {
+    clickTimeout = setTimeout(() => {
+      clickCount = 0;
+    }, 1000);
+  }
+
+  if (clickCount === 3) {
+    clearTimeout(clickTimeout);
+    clickCount = 0;
+
+    showSegmentButton.disabled = false;
+    showSegmentButton.style.opacity = "1";
+    showSegmentButton.style.cursor = "pointer";
+
+    vvvdeoHeader.style.color = "#ff69b4";
+    vvvdeoHeader.textContent = "vvvdeo unlocked!";
+    setTimeout(() => {
+      vvvdeoHeader.style.color = "";
+      vvvdeoHeader.textContent = "vvvdeo";
+    }, 1500);
+  }
+});
 
 showTrimButton.addEventListener("click", () => {
   ffmpegInputsContainer.style.display = "flex";

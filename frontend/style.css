@@ -310,3 +310,8 @@ video {
         padding-bottom: 150%;
     }
 }
+
+#show-segment-btn {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
