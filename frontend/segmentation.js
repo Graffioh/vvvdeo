@@ -82,13 +82,17 @@ toggleIframeBtn.addEventListener("click", () => {
 
     // Show the container and update state
     iframeContainer.style.display = "block";
-    toggleIframeBtn.textContent = "Hide Video Link Downloader";
     iframeLoaded = true;
+    toggleIframeBtn.classList.add("active"); // Add active class for up arrow
   } else {
-    // Hide the container and update state
-    iframeContainer.style.display = "none";
-    toggleIframeBtn.textContent = "Use Video Link Downloader";
-    iframeLoaded = false;
+    // Toggle visibility
+    if (iframeContainer.style.display === "block") {
+      iframeContainer.style.display = "none";
+      toggleIframeBtn.classList.remove("active"); // Remove active class for down arrow
+    } else {
+      iframeContainer.style.display = "block";
+      toggleIframeBtn.classList.add("active"); // Add active class for up arrow
+    }
   }
 });
 

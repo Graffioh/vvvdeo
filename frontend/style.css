@@ -194,8 +194,21 @@ video {
 }
 
 /* IDs */
+
 #toggle-iframe-btn {
-    margin-top: 15px;
+    margin-bottom: 15px;
+    font-size: 12px;
+    padding: 8px;
+    width: auto;
+    transition: all 0.3s ease;
+}
+
+#toggle-iframe-btn::after {
+    content: "Open ▼";
+}
+
+#toggle-iframe-btn.active::after {
+    content: "Close ▲";
 }
 
 #video-player-container {
