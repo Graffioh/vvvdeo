@@ -2,7 +2,7 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const BACKEND_WS_URL = import.meta.env.VITE_BACKEND_WS_URL;
+//const BACKEND_WS_URL = import.meta.env.VITE_BACKEND_WS_URL;
 
 const videoPlayer = document.getElementById("video-player");
 const videoInputUpload = document.getElementById("input-video");
@@ -64,6 +64,34 @@ const trim = async (file, startTrim, endTrim) => {
   loadingSpinnerContainer.style.display = "none";
 };
 
+const toggleIframeBtn = document.getElementById("toggle-iframe-btn");
+const iframeContainer = document.getElementById("iframe-container");
+let iframeLoaded = false;
+
+toggleIframeBtn.addEventListener("click", () => {
+  if (!iframeLoaded) {
+    // Create and inject the iframe
+    const iframe = document.createElement("iframe");
+    iframe.src = "https://cobalt.tools/";
+    iframe.style.position = "absolute";
+    iframe.style.top = "0";
+    iframe.style.left = "0";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframeContainer.appendChild(iframe);
+
+    // Show the container and update state
+    iframeContainer.style.display = "block";
+    toggleIframeBtn.textContent = "Hide Video Link Downloader";
+    iframeLoaded = true;
+  } else {
+    // Hide the container and update state
+    iframeContainer.style.display = "none";
+    toggleIframeBtn.textContent = "Use Video Link Downloader";
+    iframeLoaded = false;
+  }
+});
+
 const downloadButton = document.getElementById("download-btn");
 
 // upload video
@@ -92,24 +120,24 @@ downloadButton.addEventListener("click", () => {
   a.remove();
 });
 
-const convertStreamToFile = async () => {
-  try {
-    const videoUrl = videoPlayer.src;
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch video: ${response.statusText}`);
-    }
-    const videoBlob = await response.blob();
-    const videoFile = new File([videoBlob], "streamedVideo.mp4", {
-      type: videoBlob.type,
-    });
-    return videoFile;
-  } catch (error) {
-    console.error("Error converting video stream to file:", error);
-    alert("Failed to convert video stream to file.");
-    return null;
-  }
-};
+// const convertStreamToFile = async () => {
+// try {
+// const videoUrl = videoPlayer.src;
+// const response = await fetch(videoUrl);
+// if (!response.ok) {
+// throw new Error(`Failed to fetch video: ${response.statusText}`);
+// }
+// const videoBlob = await response.blob();
+// const videoFile = new File([videoBlob], "streamedVideo.mp4", {
+// type: videoBlob.type,
+// });
+// return videoFile;
+// } catch (error) {
+// console.error("Error converting video stream to file:", error);
+// alert("Failed to convert video stream to file.");
+// return null;
+// }
+// };
 
 // ffmpeg functionalities
 const ffmpegInputsContainer = document.getElementById("ffmpeg-container");
@@ -237,14 +265,6 @@ trimButtonFast.addEventListener("click", async () => {
   const startTrimValue = startTimestampInput.value;
   const endTrimValue = endTimestampInput.value;
 
-  // const startTrimSeconds = timeToSeconds(startTrimValue);
-  // const endTrimSeconds = timeToSeconds(endTrimValue);
-
-  //if (endTrimSeconds - startTrimSeconds > 10) {
-  //  alert("Video needs to be maximum 10 seconds long.");
-  //  return;
-  //}
-
   const videoInputFile = await getVideoFile();
 
   if (videoInputFile) {
@@ -255,10 +275,6 @@ trimButtonFast.addEventListener("click", async () => {
 
   startTimestampInput.value = null;
   endTimestampInput.value = null;
-
-  // trimInputsContainer.style.display = "none";
-  // videoInferenceContainer.style.display = "block";
-  // uploadVideoAndConnectToWebsocket(trimmedVideoFile);
 });
 
 speedupButton.addEventListener("click", async () => {
@@ -498,6 +514,13 @@ imageInput.addEventListener("change", (event) => {
 // INFERENCE
 //
 inferenceVideoButtonElement.addEventListener("click", async () => {
+  console.log("GIVE ME CREDITS FOR INFERENCE");
+
+  if (videoPlayer.duration > 5) {
+    alert("Video must be 5 seconds or shorter. Please trim the video.");
+    return;
+  }
+
   const imageFile = imageInput.files[0];
   const videoFile = await getVideoFile();
 

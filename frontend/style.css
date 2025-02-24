@@ -187,7 +187,17 @@ video {
     margin-top: 10px;
 }
 
+.iframe-container {
+    position: relative;
+    width: 1000px;
+    height: 50px;
+}
+
 /* IDs */
+#toggle-iframe-btn {
+    margin-top: 15px;
+}
+
 #video-player-container {
     display: none;
     flex-direction: column;
@@ -237,6 +247,7 @@ video {
 
 #download-btn {
     display: none;
+    margin-top: 10px;
 }
 
 #trim-btn {
