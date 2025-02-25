@@ -154,21 +154,21 @@ const showSegmentButton = document.getElementById("show-segment-btn");
 
 // Easter egg to enable the Segment button after 3 vvvdeo header clicks
 const vvvdeoHeader = document.getElementById("vvvdeo-header");
-let clickCount = 0;
-let clickTimeout = null;
+let vvvdeoHeaderEasterEggClickCount = 0;
+let vvvdeoHeaderEasterEggClicTimeout = null;
 
 vvvdeoHeader.addEventListener("click", () => {
-  clickCount++;
+  vvvdeoHeaderEasterEggClickCount++;
 
-  if (clickCount === 1) {
-    clickTimeout = setTimeout(() => {
-      clickCount = 0;
+  if (vvvdeoHeaderEasterEggClickCount === 1) {
+    vvvdeoHeaderEasterEggClicTimeout = setTimeout(() => {
+      vvvdeoHeaderEasterEggClickCount = 0;
     }, 1000);
   }
 
-  if (clickCount === 3) {
-    clearTimeout(clickTimeout);
-    clickCount = 0;
+  if (vvvdeoHeaderEasterEggClickCount === 3) {
+    clearTimeout(vvvdeoHeaderEasterEggClicTimeout);
+    vvvdeoHeaderEasterEggClickCount = 0;
 
     showSegmentButton.disabled = false;
     showSegmentButton.style.opacity = "1";
@@ -583,7 +583,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     }),
   );
 
-  loadingSpinnerContainer.style.display = "block";
+  loadingSpinnerContainer.style.display = "flex";
   inferenceVideoButtonElement.hidden = true;
   addPositiveLabelButton.disabled = true;
   addNegativeLabelButton.disabled = true;
