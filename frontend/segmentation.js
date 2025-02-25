@@ -12,6 +12,39 @@ const loadingSpinnerContainer = document.getElementById(
 );
 const ffmpegMessage = document.getElementById("ffmpeg-message");
 
+// random filename generation
+const adjectives = [
+  "funky",
+  "silly",
+  "wacky",
+  "quirky",
+  "zany",
+  "goofy",
+  "bouncy",
+  "fluffy",
+  "giggly",
+  "sparkly",
+];
+const nouns = [
+  "unicorn",
+  "banana",
+  "penguin",
+  "ninja",
+  "robot",
+  "panda",
+  "rocket",
+  "jellybean",
+  "marshmallow",
+  "cupcake",
+];
+
+function generateRandomFilename() {
+  const randomAdjective =
+    adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  return `${randomAdjective}_${randomNoun}.mp4`;
+}
+
 // ffmpeg wasm trimming
 const BASE_FFMPEG_WASM_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 
@@ -619,7 +652,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "crafted_vvvdeo.mp4";
+    a.download = generateRandomFilename();
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
