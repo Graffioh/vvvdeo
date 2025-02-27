@@ -224,6 +224,10 @@ showTrimButton.addEventListener("click", () => {
   speedupFactorContainer.style.display = "none";
 
   inferenceContainer.style.display = "none";
+
+  showTrimButton.style.color = "grey";
+  showSpeedupButton.style.color = "white";
+  showSegmentButton.style.color = "white";
 });
 
 showSpeedupButton.addEventListener("click", () => {
@@ -242,6 +246,10 @@ showSpeedupButton.addEventListener("click", () => {
   speedupFactorContainer.style.display = "block";
 
   inferenceContainer.style.display = "none";
+
+  showTrimButton.style.color = "white";
+  showSpeedupButton.style.color = "grey";
+  showSegmentButton.style.color = "white";
 });
 
 const inferenceContainer = document.getElementById("inference-container");
@@ -251,6 +259,9 @@ showSegmentButton.addEventListener("click", () => {
   trimButtonFast.style.display = "none";
   speedupFactorContainer.style.display = "none";
   inferenceContainer.style.display = "flex";
+  showTrimButton.style.color = "white";
+  showSpeedupButton.style.color = "white";
+  showSegmentButton.style.color = "grey";
 });
 
 function timeToSeconds(time) {
