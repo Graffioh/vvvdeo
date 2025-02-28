@@ -19,7 +19,7 @@ The backend (written in Go) is dockerized and deployed on Fly.io.
 
 ## SAM2 Segmentation
 
-**Working only locally**.
+**It works only locally**, if you want to run on your computer, follow the instructions in the next section.
 
 The most fun feature to implement! I learned a lot about building a custom backend segmentation system by leveraging existing models (thanks to Claude for the code).
 
@@ -28,5 +28,35 @@ It was implemented using Cloudflare Workers and Cloudflare Queues for asynchrono
 Here's a rough diagram of the whole async workflow (shoutout to [moni](https://x.com/fr3fou) for the help):
 
 <img width="714" alt="image" src="https://github.com/user-attachments/assets/d5d7dee8-e98f-4532-8372-fe6f1dd16c8b" />
+
+## Local Setup
+
+### Frontend
+
+Inside the ```/frontend``` folder:
+
+- Create a .env file and add the following line:
+  ```VITE_BACKEND_URL=http://localhost:8080```
+- Run the development server:
+  ```npm run dev```
+
+### Backend
+
+Inside the ```/backend``` folder:
+
+- Create a .env file and add the following line:
+  ```APP_ENV=DEV```
+- Start the backend server:
+  ```go run main.go```
+
+#### Segmentation
+
+Inside the ```/sam2seg``` folder:
+
+- Install SAM2 by following the official instructions: https://github.com/facebookresearch/sam2#installation
+- Run the Python segmentation backend:
+  ```python sam2segmentation.py```
+
+----
 
 I hope someone finds this messy source code useful :)
