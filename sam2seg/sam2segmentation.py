@@ -31,6 +31,7 @@ app.logger.addHandler(log_handler)
 app.logger.setLevel(logging.DEBUG)
 app.logger.info("Starting the application...")
 
+# useless because i can only use the cpu :)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # local model
@@ -38,63 +39,63 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #model_cfg = "./configs/sam2.1/sam2.1_hiera_s.yaml"
 #predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
 
-# pretrained Hugging Face model
+# Hugging Face model
 model_str = "facebook/sam2-hiera-base-plus" if torch.cuda.is_available() else "facebook/sam2-hiera-tiny"
 predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 
-def get_path_from_presignedurl(key) -> str:
-        url = f"http://localhost:8080/presigned-url/get?key={key}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            response_data = response.json()
+# def get_path_from_presignedurl(key) -> str:
+#         url = f"http://localhost:8080/presigned-url/get?key={key}"
+#         try:
+#             response = requests.get(url)
+#             response.raise_for_status()
+#             response_data = response.json()
 
-            path = response_data.get('presignedUrl')
-            if not path:
-                app.logger.error("Response did not contain presignedUrl!")
-                raise RuntimeError("Response did not contain 'presignedUrl'.")
-            return path
-        except requests.RequestException as e:
-            app.logger.error("Failed to fetch presigned URL!")
-            raise RuntimeError(f"Failed to fetch presigned URL: {e}")
+#             path = response_data.get('presignedUrl')
+#             if not path:
+#                 app.logger.error("Response did not contain presignedUrl!")
+#                 raise RuntimeError("Response did not contain 'presignedUrl'.")
+#             return path
+#         except requests.RequestException as e:
+#             app.logger.error("Failed to fetch presigned URL!")
+#             raise RuntimeError(f"Failed to fetch presigned URL: {e}")
 
-def download_video(video_url, temp_dir):
-    local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
+# def download_video(video_url, temp_dir):
+#     local_video_path = os.path.join(temp_dir, "downloaded_video.mp4")
 
-    try:
-        with requests.get(video_url, stream=True) as response:
-            response.raise_for_status()
-            with open(local_video_path, 'wb') as f:
-                shutil.copyfileobj(response.raw, f)
-    except requests.exceptions.RequestException as e:
-        app.logger.exception("Failed to download the original video")
-        raise ValueError(f"Failed to download video: {e}")
+#     try:
+#         with requests.get(video_url, stream=True) as response:
+#             response.raise_for_status()
+#             with open(local_video_path, 'wb') as f:
+#                 shutil.copyfileobj(response.raw, f)
+#     except requests.exceptions.RequestException as e:
+#         app.logger.exception("Failed to download the original video")
+#         raise ValueError(f"Failed to download video: {e}")
 
-    return local_video_path
+#     return local_video_path
 
-def download_and_extract_zip(zip_url, temp_dir):
-    zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
-    extract_dir = os.path.join(temp_dir, "frames")
+# def download_and_extract_zip(zip_url, temp_dir):
+#     zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
+#     extract_dir = os.path.join(temp_dir, "frames")
 
-    try:
-        with requests.get(zip_url, stream=True) as response:
-            response.raise_for_status()
-            with open(zip_path, 'wb') as f:
-                shutil.copyfileobj(response.raw, f)
-    except requests.exceptions.RequestException as e:
-        app.logger.exception("Failed to download zip file from r2 storage!")
-        raise ValueError(f"Failed to download zip file: {e}")
+#     try:
+#         with requests.get(zip_url, stream=True) as response:
+#             response.raise_for_status()
+#             with open(zip_path, 'wb') as f:
+#                 shutil.copyfileobj(response.raw, f)
+#     except requests.exceptions.RequestException as e:
+#         app.logger.exception("Failed to download zip file from r2 storage!")
+#         raise ValueError(f"Failed to download zip file: {e}")
 
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-    except zipfile.BadZipFile:
-        app.logger.exception("The downloaded file is not a valid .zip archive")
-        raise ValueError("The downloaded file is not a valid .zip archive")
+#     try:
+#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#             zip_ref.extractall(extract_dir)
+#     except zipfile.BadZipFile:
+#         app.logger.exception("The downloaded file is not a valid .zip archive")
+#         raise ValueError("The downloaded file is not a valid .zip archive")
 
-    app.logger.info("Zip extracted sucessfully")
+#     app.logger.info("Zip extracted sucessfully")
 
-    return extract_dir
+#     return extract_dir
 
 def load_and_prepare_image(image_path, required_format="RGBA"):
     if not os.path.exists(image_path):
@@ -118,30 +119,6 @@ def load_and_prepare_image(image_path, required_format="RGBA"):
             raise ValueError(f"Image must be in RGB or RGBA format. Current shape: {image.shape}")
 
     return image
-
-def prepare_overlay_img(overlay_img_file):
-    if not overlay_img_file:
-        app.logger.exception("Overlay image file not found!")
-        raise ValueError("Overlay image file not found!")
-
-    file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
-    overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
-    if overlay_img is not None and overlay_img.shape[-1] != 4:
-        b, g, r = cv2.split(overlay_img)[:3]
-        alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
-        overlay_img = cv2.merge((b, g, r, alpha))
-
-    return overlay_img
-
-def prepare_logo_img():
-    logo_img = None
-    logo_img_name = "vvvdeo-logo.png"
-    if logo_img_name:
-        logo_img = load_and_prepare_image(f"./{logo_img_name}")
-        app.logger.info("Logo image loaded and prepared.")
-
-    return logo_img
-
 
 def apply_image_to_segmentation(frame, masks, overlay_img):
     result_frame = frame.copy()
@@ -178,6 +155,29 @@ def apply_image_to_segmentation(frame, masks, overlay_img):
         result_frame[y_min:y_max+1, x_min:x_max+1] = blended.astype(np.uint8)
 
     return result_frame
+
+def prepare_overlay_img(overlay_img_file):
+    if not overlay_img_file:
+        app.logger.exception("Overlay image file not found!")
+        raise ValueError("Overlay image file not found!")
+
+    file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+    overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
+    if overlay_img is not None and overlay_img.shape[-1] != 4:
+        b, g, r = cv2.split(overlay_img)[:3]
+        alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
+        overlay_img = cv2.merge((b, g, r, alpha))
+
+    return overlay_img
+
+def prepare_logo_img():
+    logo_img = None
+    logo_img_name = "vvvdeo-logo.png"
+    if logo_img_name:
+        logo_img = load_and_prepare_image(f"./{logo_img_name}")
+        app.logger.info("Logo image loaded and prepared.")
+
+    return logo_img
 
 def add_logo_to_frame(frame, logo_img, position='top-right', padding=50):
     if logo_img is None:
@@ -276,6 +276,7 @@ def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_pa
             # combine the frame with the others frames to create the final modified video
             sink.write_frame(final_frame_with_logo)
 
+
 @app.route("/segment", methods=["POST"])
 def segment():
     try:
@@ -283,15 +284,23 @@ def segment():
             app.logger.debug("Temp directory created: %s", temp_dir)
 
             # get r2 bucket object key
-            file_key = request.form.get('fileKey')
-            if not file_key:
-                app.logger.error("Missing 'file_key' in request body")
-                return jsonify({"error": "Missing 'file_key' in request body"}), 400
-            video_name = file_key
+            # file_key = request.form.get('fileKey')
+            # if not file_key:
+            #     app.logger.error("Missing 'file_key' in request body")
+            #     return jsonify({"error": "Missing 'file_key' in request body"}), 400
+            # video_name = file_key
 
             # fetch video and frames with presigned urls
-            cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
-            local_video_path = download_video(cloudflare_video_path, temp_dir)
+            # cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
+            # local_video_path = download_video(cloudflare_video_path, temp_dir)
+            #
+            # cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
+            # local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
+
+            video_name = "to_segment.mp4"
+            local_video_path = "./video/" + video_name
+            local_frames_path = "./frames/"
+            frames_paths = sorted(sv.list_files_with_extensions(directory=local_frames_path, extensions=["jpg"]))
 
             try:
                 video_info = sv.VideoInfo.from_video_path(local_video_path)
@@ -303,17 +312,17 @@ def segment():
                 app.logger.exception(f"Video file not found: {video_name}")
                 raise ValueError(f"Video file not found: {video_name}") from e
 
-            cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
-            local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
+            # inference (initial state)
+            app.logger.debug("Initializing SAM2 predictor with frames path: %s", local_frames_path)
+            try:
+                inference_state = predictor.init_state(video_path=local_frames_path)
+                predictor.reset_state(inference_state)
+                app.logger.info("Inference state initialized and reset")
+            except Exception as e:
+                app.logger.exception(f"Failed to initialize or reset SAM2 predictor: {str(e)}")
+                return jsonify({"error": f"Failed to initialize SAM2 predictor: {str(e)}"}), 500
 
-            #device_str = "cuda" if torch.cuda.is_available() else "cpu"
-            #with torch.inference_mode(), torch.autocast(device_str, dtype=torch.bfloat16):
-            # inference the initial state
-            inference_state = predictor.init_state(video_path=local_frames_path)
-            predictor.reset_state(inference_state)
-            app.logger.info("Inference state initialized and reset")
-
-            # get points and labels from request
+            # get points and labels from frontend request
             segmentation_data = request.form.get("segmentationData")
             if not segmentation_data:
                 app.logger.error("Missing 'segmentationData' in request body")
@@ -339,7 +348,7 @@ def segment():
                 app.logger.exception("Error processing points")
                 return jsonify({"error": f"Error processing points: {str(e)}"}), 500
 
-            # add points used for the segment prediction
+            # add points used for the segmentation
             segmentation_frame_idx = 0
             _, _, _ = predictor.add_new_points_or_box(
                 inference_state=inference_state,
@@ -349,10 +358,7 @@ def segment():
                 labels=labels,
             )
 
-            frames_paths = sorted(sv.list_files_with_extensions(
-                directory=local_frames_path,
-                extensions=["jpg"]))
-
+            # prepare the image to apply on top of the segmentation
             overlay_img_file = request.files.get("image")
             overlay_img = prepare_overlay_img(overlay_img_file)
             logo_img = prepare_logo_img()
@@ -362,6 +368,7 @@ def segment():
             propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img)
             app.logger.info("Video propagation successful.")
 
+            # fix audio not working by re-encoding the audio directly in the video
             output_video = reencode_audio_in_video(temp_dir, local_video_path)
 
             # send the video to the frontend for download

@@ -1,9 +1,7 @@
 package video
 
 import (
-	"archive/zip"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,223 +11,331 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"veedeo/events"
-	"veedeo/storage"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func downloadVideo(bucket, key, localPath string) error {
-	client := storage.GetS3Client()
-	resp, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+// func downloadVideo(bucket, key, localPath string) error {
+// 	client := storage.GetS3Client()
+// 	resp, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
+// 		Bucket: aws.String(bucket),
+// 		Key:    aws.String(key),
+// 	})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer resp.Body.Close()
 
-	err = os.MkdirAll(filepath.Dir(localPath), os.ModePerm)
-	if err != nil {
-		fmt.Printf("Error creating directories: %v\n", err)
-		return err
-	}
+// 	err = os.MkdirAll(filepath.Dir(localPath), os.ModePerm)
+// 	if err != nil {
+// 		fmt.Printf("Error creating directories: %v\n", err)
+// 		return err
+// 	}
 
-	file, err := os.Create(localPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+// 	file, err := os.Create(localPath)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
-	return err
+// 	_, err = io.Copy(file, resp.Body)
+// 	return err
+// }
+
+// func ensureMp4Extension(videoPath string) (string, error) {
+// 	ext := filepath.Ext(videoPath)
+// 	if ext == ".mp4" {
+// 		return videoPath, nil
+// 	}
+
+// 	newPath := videoPath + ".mp4"
+// 	err := os.Rename(videoPath, newPath)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to rename file: %w", err)
+// 	}
+
+// 	return newPath, nil
+// }
+
+// func extractFrames(videoPath, framesDir string) error {
+// 	err := os.MkdirAll(framesDir, os.ModePerm)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create frames directory: %w", err)
+// 	}
+
+// 	env := os.Getenv("APP_ENV")
+
+// 	var cmd *exec.Cmd
+// 	if env == "PROD" {
+// 		cmd = exec.Command("ffmpeg",
+// 			"-i", videoPath,
+// 			"-q:v", "2",
+// 			"-start_number", "0",
+// 			fmt.Sprintf("%s/%%05d.jpg", framesDir),
+// 		)
+// 	} else {
+// 		// select a frame every n so the development workflow is faster when inferencing
+// 		n_of_jumped_frames := "select='not(mod(n, 5))'"
+// 		cmd = exec.Command("ffmpeg",
+// 			"-i", videoPath,
+// 			"-vf", n_of_jumped_frames,
+// 			"-vsync", "vfr",
+// 			"-q:v", "2",
+// 			fmt.Sprintf("%s/%%05d.jpg", framesDir),
+// 		)
+
+// 		/*
+// 			cmd = exec.Command("ffmpeg",
+// 				"-i", videoPath,
+// 				"-q:v", "2",
+// 				"-start_number", "0",
+// 				fmt.Sprintf("%s/%%05d.jpg", framesDir),
+// 			)
+// 		*/
+// 	}
+
+// 	output, err := cmd.CombinedOutput()
+// 	if err != nil {
+// 		return fmt.Errorf("FFmpeg error: %w\nOutput: %s", err, string(output))
+// 	}
+
+// 	fmt.Println("Frame extracted!")
+// 	return nil
+// }
+
+// func zipFramesInMemory(framesDir string) (*bytes.Buffer, error) {
+// 	buf := new(bytes.Buffer)
+// 	zipWriter := zip.NewWriter(buf)
+// 	defer zipWriter.Close()
+
+// 	err := filepath.Walk(framesDir, func(path string, info os.FileInfo, err error) error {
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if info.IsDir() {
+// 			return nil
+// 		}
+
+// 		relPath, err := filepath.Rel(framesDir, path)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		file, err := os.Open(path)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to open file %s: %w", path, err)
+// 		}
+// 		defer file.Close()
+
+// 		writer, err := zipWriter.Create(relPath)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to create entry for file %s: %w", path, err)
+// 		}
+
+// 		_, err = io.Copy(writer, file)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to write file %s to zip: %w", path, err)
+// 		}
+
+// 		return nil
+// 	})
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error walking frames directory: %w", err)
+// 	}
+
+// 	return buf, nil
+// }
+
+// func uploadFrames(bucket, framesDir, videoKey string) error {
+// 	buf, err := zipFramesInMemory(framesDir)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to zip frames: %w", err)
+// 	}
+
+// 	zipKey := fmt.Sprintf("frames/%s.zip", videoKey)
+
+// 	client := storage.GetS3Client()
+// 	contentLength := int64(buf.Len())
+// 	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
+// 		Bucket:        aws.String(bucket),
+// 		Key:           aws.String(zipKey),
+// 		Body:          bytes.NewReader(buf.Bytes()),
+// 		ContentLength: &contentLength,
+// 		ContentType:   aws.String("application/zip"),
+// 	})
+
+// 	if err != nil {
+// 		return fmt.Errorf("failed to upload frames .zip: %w", err)
+// 	}
+
+// 	fmt.Println("Frames successfully uploaded!")
+// 	return nil
+// }
+
+// func cleanDirectory(dirPath string) error {
+// 	if err := os.RemoveAll(dirPath); err != nil {
+// 		return err
+// 	}
+
+// 	fmt.Printf("Removed: %s\n", dirPath)
+// 	return nil
+// }
+
+// func ProcessVideo(bucket, videoKey string) error {
+// 	fmt.Println("Video processing started...")
+
+// 	keyPath := strings.Split(videoKey, "/")[1]
+
+// 	// clean videos and frames directories before starting
+// 	if err := cleanDirectory("./tmp/videos"); err != nil {
+// 		fmt.Printf("Error cleaning temporary video directory: %v\n", err)
+// 	} else {
+// 		fmt.Println("Temporary Video directory cleaned successfully.")
+// 	}
+
+// 	if err := cleanDirectory("./tmp/frames"); err != nil {
+// 		fmt.Printf("Error cleaning temporary frames directory: %v\n", err)
+// 	} else {
+// 		fmt.Println("Temporary Frames directory cleaned successfully.")
+// 	}
+
+// 	videoPath := "./tmp/videos/" + keyPath
+// 	framesPath := "./tmp/frames/" + keyPath
+
+// 	err := downloadVideo(bucket, videoKey, videoPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to download video: %w", err)
+// 	}
+
+// 	updatedVideoPath, err := ensureMp4Extension(videoPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to ensure MP4 extension: %w", err)
+// 	}
+
+// 	err = extractFrames(updatedVideoPath, framesPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to extract frames: %w", err)
+// 	}
+
+// 	err = uploadFrames(bucket, framesPath, keyPath)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to upload frames: %w", err)
+// 	}
+
+// 	fmt.Println("Video processing complete")
+// 	return nil
+// }
+//
+// func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method == "OPTIONS" {
+// 		w.WriteHeader(http.StatusNoContent)
+// 		return
+// 	}
+
+// 	err := r.ParseMultipartForm(10 << 20)
+// 	if err != nil {
+// 		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	imageFile, imageFileHeader, err := r.FormFile("image")
+// 	if err != nil {
+// 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+// 		return
+// 	}
+// 	defer imageFile.Close()
+
+// 	segmentationData := r.FormValue("segmentationData")
+// 	if segmentationData == "" {
+// 		http.Error(w, "No segmentationData as JSON data provided", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	videoKey := r.FormValue("videoKey")
+// 	key := strings.Split(videoKey, "/")[1]
+
+// 	body := &bytes.Buffer{}
+// 	writer := multipart.NewWriter(body)
+
+// 	segmentationPart, err := writer.CreateFormField("segmentationData")
+// 	if err != nil {
+// 		http.Error(w, "Error creating form field for JSON", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	_, err = segmentationPart.Write([]byte(segmentationData))
+// 	if err != nil {
+// 		http.Error(w, "Error writing JSON to form field", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	imagePart, err := writer.CreateFormFile("image", imageFileHeader.Filename)
+// 	if err != nil {
+// 		http.Error(w, "Error creating form file for image", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	_, err = io.Copy(imagePart, imageFile)
+// 	if err != nil {
+// 		http.Error(w, "Error writing file to form file", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	fileKeyPart, err := writer.CreateFormField("fileKey")
+// 	if err != nil {
+// 		http.Error(w, "Error creating form field for fileKey", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	_, err = fileKeyPart.Write([]byte(key))
+// 	if err != nil {
+// 		http.Error(w, "Error writing fileKey to form field", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	writer.Close()
+
+// 	pythonURL := "http://localhost:9000/segment"
+// 	req, err := http.NewRequest("POST", pythonURL, body)
+// 	if err != nil {
+// 		http.Error(w, "Error creating Python server request", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		http.Error(w, "Error communicating with Python server", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer resp.Body.Close()
+
+// 	contentType := resp.Header.Get("Content-Type")
+// 	if contentType == "application/json" {
+// 		var result map[string]interface{}
+// 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+// 			http.Error(w, "Error decoding Python server response", http.StatusInternalServerError)
+// 			return
+// 		}
+// 		w.Header().Set("Content-Type", "application/json")
+// 		json.NewEncoder(w).Encode(result)
+// 		return
+// 	}
+
+// 	w.Header().Set("Content-Type", "video/mp4")
+// 	w.Header().Set("Content-Disposition", "attachment; filename=crafted_vvvdeo.mp4")
+
+// 	_, err = io.Copy(w, resp.Body)
+// 	if err != nil {
+// 		http.Error(w, "Error streaming video file", http.StatusInternalServerError)
+// 		return
+// 	}
+// }
+
+type VideoCoordinates struct {
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
 }
 
-func ensureMp4Extension(videoPath string) (string, error) {
-	ext := filepath.Ext(videoPath)
-	if ext == ".mp4" {
-		return videoPath, nil
-	}
-
-	newPath := videoPath + ".mp4"
-	err := os.Rename(videoPath, newPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to rename file: %w", err)
-	}
-
-	return newPath, nil
-}
-
-func extractFrames(videoPath, framesDir string) error {
-	err := os.MkdirAll(framesDir, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create frames directory: %w", err)
-	}
-
-	env := os.Getenv("APP_ENV")
-
-	var cmd *exec.Cmd
-	if env == "PROD" {
-		cmd = exec.Command("ffmpeg",
-			"-i", videoPath,
-			"-q:v", "2",
-			"-start_number", "0",
-			fmt.Sprintf("%s/%%05d.jpg", framesDir),
-		)
-	} else {
-		// select a frame every n so the development workflow is faster when inferencing
-		n_of_jumped_frames := "select='not(mod(n, 5))'"
-		cmd = exec.Command("ffmpeg",
-			"-i", videoPath,
-			"-vf", n_of_jumped_frames,
-			"-vsync", "vfr",
-			"-q:v", "2",
-			fmt.Sprintf("%s/%%05d.jpg", framesDir),
-		)
-
-		/*
-			cmd = exec.Command("ffmpeg",
-				"-i", videoPath,
-				"-q:v", "2",
-				"-start_number", "0",
-				fmt.Sprintf("%s/%%05d.jpg", framesDir),
-			)
-		*/
-	}
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("FFmpeg error: %w\nOutput: %s", err, string(output))
-	}
-
-	fmt.Println("Frame extracted!")
-	return nil
-}
-
-func zipFramesInMemory(framesDir string) (*bytes.Buffer, error) {
-	buf := new(bytes.Buffer)
-	zipWriter := zip.NewWriter(buf)
-	defer zipWriter.Close()
-
-	err := filepath.Walk(framesDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(framesDir, path)
-		if err != nil {
-			return err
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", path, err)
-		}
-		defer file.Close()
-
-		writer, err := zipWriter.Create(relPath)
-		if err != nil {
-			return fmt.Errorf("failed to create entry for file %s: %w", path, err)
-		}
-
-		_, err = io.Copy(writer, file)
-		if err != nil {
-			return fmt.Errorf("failed to write file %s to zip: %w", path, err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error walking frames directory: %w", err)
-	}
-
-	return buf, nil
-}
-
-func uploadFrames(bucket, framesDir, videoKey string) error {
-	buf, err := zipFramesInMemory(framesDir)
-	if err != nil {
-		return fmt.Errorf("failed to zip frames: %w", err)
-	}
-
-	zipKey := fmt.Sprintf("frames/%s.zip", videoKey)
-
-	client := storage.GetS3Client()
-	contentLength := int64(buf.Len())
-	_, err = client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket:        aws.String(bucket),
-		Key:           aws.String(zipKey),
-		Body:          bytes.NewReader(buf.Bytes()),
-		ContentLength: &contentLength,
-		ContentType:   aws.String("application/zip"),
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to upload frames .zip: %w", err)
-	}
-
-	fmt.Println("Frames successfully uploaded!")
-	return nil
-}
-
-func cleanDirectory(dirPath string) error {
-	if err := os.RemoveAll(dirPath); err != nil {
-		return err
-	}
-
-	fmt.Printf("Removed: %s\n", dirPath)
-	return nil
-}
-
-func ProcessVideo(bucket, videoKey string) error {
-	fmt.Println("Video processing started...")
-
-	keyPath := strings.Split(videoKey, "/")[1]
-
-	// clean videos and frames directories before starting
-	if err := cleanDirectory("./tmp/videos"); err != nil {
-		fmt.Printf("Error cleaning temporary video directory: %v\n", err)
-	} else {
-		fmt.Println("Temporary Video directory cleaned successfully.")
-	}
-
-	if err := cleanDirectory("./tmp/frames"); err != nil {
-		fmt.Printf("Error cleaning temporary frames directory: %v\n", err)
-	} else {
-		fmt.Println("Temporary Frames directory cleaned successfully.")
-	}
-
-	videoPath := "./tmp/videos/" + keyPath
-	framesPath := "./tmp/frames/" + keyPath
-
-	err := downloadVideo(bucket, videoKey, videoPath)
-	if err != nil {
-		return fmt.Errorf("failed to download video: %w", err)
-	}
-
-	updatedVideoPath, err := ensureMp4Extension(videoPath)
-	if err != nil {
-		return fmt.Errorf("failed to ensure MP4 extension: %w", err)
-	}
-
-	err = extractFrames(updatedVideoPath, framesPath)
-	if err != nil {
-		return fmt.Errorf("failed to extract frames: %w", err)
-	}
-
-	err = uploadFrames(bucket, framesPath, keyPath)
-	if err != nil {
-		return fmt.Errorf("failed to upload frames: %w", err)
-	}
-
-	fmt.Println("Video processing complete")
-	return nil
+type Points struct {
+	Coordinates []VideoCoordinates `json:"coordinates"`
+	Labels      []int32            `json:"labels"`
 }
 
 func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
@@ -376,25 +482,99 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type VideoCoordinates struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
+func saveVideoToDirectory(file multipart.File, filename string) error {
+	videoDir := "../sam2seg/video"
+	err := os.MkdirAll(videoDir, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create video directory: %w", err)
+	}
+
+	videoPath := filepath.Join(videoDir, filename)
+	dst, err := os.Create(videoPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		return fmt.Errorf("failed to save video file: %w", err)
+	}
+
+	return nil
 }
 
-type Points struct {
-	Coordinates []VideoCoordinates `json:"coordinates"`
-	Labels      []int32            `json:"labels"`
+func extractFramesToDirectory(videoPath string) error {
+	framesDir := "../sam2seg/frames"
+	err := os.MkdirAll(framesDir, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create frames directory: %w", err)
+	}
+
+	cmd := exec.Command("ffmpeg",
+		"-i", videoPath,
+		"-q:v", "2",
+		"-start_number", "0",
+		fmt.Sprintf("%s/%%05d.jpg", framesDir))
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to extract frames: %w\nOutput: %s", err, string(output))
+	}
+
+	return nil
 }
 
-func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
+func cleanDirectories() error {
+	videoDir := "../sam2seg/video"
+	if err := os.RemoveAll(videoDir); err != nil {
+		return fmt.Errorf("failed to clean video directory: %w", err)
+	}
+
+	framesDir := "../sam2seg/frames"
+	if err := os.RemoveAll(framesDir); err != nil {
+		return fmt.Errorf("failed to clean frames directory: %w", err)
+	}
+
+	return nil
+}
+
+func VideoLocalInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
+	// clean local dir before attempting a new segmentation
+	if err := cleanDirectories(); err != nil {
+		http.Error(w, fmt.Sprintf("Error cleaning directories: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// parse the form sent by the frontend
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
+		return
+	}
+
+	videoFile, _, err := r.FormFile("video")
+	if err != nil {
+		http.Error(w, "Error retrieving the video file", http.StatusBadRequest)
+		return
+	}
+	defer videoFile.Close()
+
+	err = saveVideoToDirectory(videoFile, "to_segment.mp4")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error saving video: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	videoPath := filepath.Join("../sam2seg/video", "to_segment.mp4")
+	err = extractFramesToDirectory(videoPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error extracting frames: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -411,12 +591,10 @@ func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	videoKey := r.FormValue("videoKey")
-	key := strings.Split(videoKey, "/")[1]
-
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
+	// create the form that needs to be sent to the python backend
 	segmentationPart, err := writer.CreateFormField("segmentationData")
 	if err != nil {
 		http.Error(w, "Error creating form field for JSON", http.StatusInternalServerError)
@@ -439,18 +617,13 @@ func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileKeyPart, err := writer.CreateFormField("fileKey")
+	err = writer.Close()
 	if err != nil {
-		http.Error(w, "Error creating form field for fileKey", http.StatusInternalServerError)
+		http.Error(w, "Error closing multipart writer", http.StatusInternalServerError)
 		return
 	}
-	_, err = fileKeyPart.Write([]byte(key))
-	if err != nil {
-		http.Error(w, "Error writing fileKey to form field", http.StatusInternalServerError)
-		return
-	}
-	writer.Close()
 
+	// send the POST inference request to the python backend
 	pythonURL := "http://localhost:9000/segment"
 	req, err := http.NewRequest("POST", pythonURL, body)
 	if err != nil {
@@ -467,6 +640,7 @@ func VideoInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	// get and send to frontend the segmentation result
 	contentType := resp.Header.Get("Content-Type")
 	if contentType == "application/json" {
 		var result map[string]interface{}

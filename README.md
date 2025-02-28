@@ -19,6 +19,8 @@ The backend (written in Go) is dockerized and deployed on Fly.io.
 
 ## SAM2 Segmentation
 
+**Working only locally**.
+
 The most fun feature to implement! I learned a lot about building a custom backend segmentation system by leveraging existing models (thanks to Claude for the code).
 
 It was implemented using Cloudflare Workers and Cloudflare Queues for asynchronous processing. However it's currently not working since a lot has changed, and the backend is not deployed cause I'm broke.
