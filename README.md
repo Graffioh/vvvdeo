@@ -1,6 +1,6 @@
 # vvvdeo
 
-Trim or speed up videos with a click by downloading them from social media thanks to cobalt or choosing a local video.
+Easily Trim or Speed up videos with a click, and download videos from social media with [cobalt](https://cobalt.tools).
 
 This project was mostly for fun/experimentation, so I'm open-sourcing it, just in case you're curious about the code or want to take inspiration for your own projects.
 
@@ -14,7 +14,7 @@ The backend (written in Go) is dockerized and deployed on Fly.io.
 
 ## Trim and Speedup Features
 
-- **Trimming** is implemented with `ffmpeg.wasm`, so everything is done client-side. I wanted to try `ffmpeg.wasm`, and overall, it's really cool—but it still has room for improvement.
+- **Trimming** is implemented with `ffmpeg.wasm`, allowing the browser to process the video client-side. I wanted to try `ffmpeg.wasm`, and overall, it's really cool—but it still has room for improvement.
 - **Speedup** is done server-side with `ffmpeg`.
 
 ## SAM2 Segmentation
@@ -58,6 +58,8 @@ Inside the ```/sam2seg``` folder:
   ```pip install -r requirements.txt```
 - Run the Python segmentation backend:
   ```python sam2segmentation.py```
+
+**NOTE for Mac users**: If you are on M1/M2 the model will use MPS and fallback to CPU for unsupported ops, but sometimes MPS is much slower than CPU so use at your own risk.
 
 ----
 

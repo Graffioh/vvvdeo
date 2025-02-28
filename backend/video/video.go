@@ -513,7 +513,7 @@ func extractFramesToDirectory(videoPath string) error {
 
 	cmd := exec.Command("ffmpeg",
 		"-i", videoPath,
-		"-q:v", "2",
+		"-q:v", "3",
 		"-start_number", "0",
 		fmt.Sprintf("%s/%%05d.jpg", framesDir))
 
