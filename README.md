@@ -54,6 +54,8 @@ Inside the ```/backend``` folder:
 Inside the ```/sam2seg``` folder:
 
 - Install SAM2 by following the official instructions: https://github.com/facebookresearch/sam2#installation
+- Run this to install required packages:
+  ```pip install -r requirements.txt```
 - Run the Python segmentation backend:
   ```python sam2segmentation.py```
 
