@@ -414,6 +414,7 @@ const inferenceVideoButtonElement = document.getElementById(
 let coordinates = [];
 let labels = [];
 const labelsContainer = document.getElementById("labels-container");
+const clearPointsAndLabelsBtn = document.getElementById("seg-clear");
 
 const addPositiveLabelButton = document.getElementById("seg-add");
 const addNegativeLabelButton = document.getElementById("seg-excl");
@@ -470,6 +471,22 @@ addPositiveLabelButton.addEventListener("click", () => {
 addNegativeLabelButton.addEventListener("click", () => {
   activeLabel = activeLabel === "negative" ? null : "negative";
   updateLabelButtonUI();
+});
+
+function clearSegmentationPointsAndLabels() {
+  coordinates = [];
+  labels = [];
+  labelsContainer.innerHTML = "";
+  addPositiveLabelButton.disabled = false;
+  addNegativeLabelButton.disabled = false;
+}
+
+clearPointsAndLabelsBtn.addEventListener("click", () => {
+  clearSegmentationPointsAndLabels();
+  document.body.style.cursor = "default";
+  addPositiveLabelButton.style.color = "white";
+  addNegativeLabelButton.style.color = "white";
+  isVideoPlayable = true;
 });
 
 videoPlayer.addEventListener("click", (event) => {
@@ -650,11 +667,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
       );
     }
 
-    coordinates = [];
-    labels = [];
-    labelsContainer.innerHTML = "";
-    addPositiveLabelButton.disabled = false;
-    addNegativeLabelButton.disabled = false;
+    clearSegmentationPointsAndLabels();
     imageInput.disabled = false;
     videoInputUpload.disabled = false;
 
