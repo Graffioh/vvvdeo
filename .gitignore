@@ -1,26 +1,22 @@
 .DS_store
+.ropeproject/
 
 frontend/.env
 
-/shaka-player
-/video-hls
-/video-dash
-sam2seg/src
-sam2seg/frames
-sam2seg/envv
-sam2seg/static
-sam2seg/img
-sam2seg/video
-sam2seg/app.log
-sam2seg/.dockerignore
-sam2seg/configs
-sam2seg/__pycache__
-
-.ropeproject/
+local/sam2seg/src
+local/sam2seg/frames
+local/sam2seg/envv
+local/sam2seg/static
+local/sam2seg/img
+local/sam2seg/video
+local/sam2seg/app.log
+local/sam2seg/.dockerignore
+local/sam2seg/configs
+local/sam2seg/__pycache__
 
 backend/.env
 backend/tmp
 
 todo.md
 
-node_modules/
+old/
