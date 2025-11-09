@@ -8,9 +8,13 @@ const videoPlayer = document.getElementById("video-player");
 const videoInputUpload = document.getElementById("input-video");
 const videoPlayerContainer = document.getElementById("video-player-container");
 const loadingSpinnerContainer = document.getElementById(
-  "loading-spinner-container",
+  "loading-spinner-container"
 );
 const ffmpegMessage = document.getElementById("ffmpeg-message");
+const loadingText = document.getElementById("loading-text");
+const LOCAL_SEGMENTATION_LOADING_MESSAGE =
+  "Segmentation in progress. Check local Docker logs for detailed progress.";
+const DEFAULT_LOADING_MESSAGE = "Crafting the video...";
 
 // random filename generation
 const adjectives = [
@@ -52,6 +56,8 @@ let trimmedVideoFile = null;
 let ffmpeg = null;
 const trim = async (file, startTrim, endTrim) => {
   loadingSpinnerContainer.style.display = "flex";
+  loadingText.innerHTML = LOCAL_SEGMENTATION_LOADING_MESSAGE;
+  ffmpegMessage.innerHTML = "";
   if (ffmpeg === null) {
     ffmpeg = new FFmpeg();
     ffmpeg.on("log", ({ message }) => {
@@ -63,11 +69,11 @@ const trim = async (file, startTrim, endTrim) => {
     await ffmpeg.load({
       coreURL: await toBlobURL(
         `${BASE_FFMPEG_WASM_URL}/ffmpeg-core.js`,
-        "text/javascript",
+        "text/javascript"
       ),
       wasmURL: await toBlobURL(
         `${BASE_FFMPEG_WASM_URL}/ffmpeg-core.wasm`,
-        "application/wasm",
+        "application/wasm"
       ),
     });
   }
@@ -180,41 +186,26 @@ const trimButtonFast = document.getElementById("trim-btn");
 const showSpeedupButton = document.getElementById("show-speedup-btn");
 const speedupButton = document.getElementById("speedup-btn");
 const speedupFactorContainer = document.getElementById(
-  "speedup-inputs-container",
+  "speedup-inputs-container"
 );
 const speedupFactorInput = document.getElementById("speedup-factor-input");
 const showSegmentButton = document.getElementById("show-segment-btn");
 
-// Easter egg to enable the Segment button after 3 vvvdeo header clicks
-const vvvdeoHeader = document.getElementById("vvvdeo-header");
-let vvvdeoHeaderEasterEggClickCount = 0;
-let vvvdeoHeaderEasterEggClicTimeout = null;
+const isLocalHost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname === "::1" ||
+  window.location.hostname.endsWith(".local");
 
-vvvdeoHeader.addEventListener("click", () => {
-  vvvdeoHeaderEasterEggClickCount++;
-
-  if (vvvdeoHeaderEasterEggClickCount === 1) {
-    vvvdeoHeaderEasterEggClicTimeout = setTimeout(() => {
-      vvvdeoHeaderEasterEggClickCount = 0;
-    }, 1000);
-  }
-
-  if (vvvdeoHeaderEasterEggClickCount === 3) {
-    clearTimeout(vvvdeoHeaderEasterEggClicTimeout);
-    vvvdeoHeaderEasterEggClickCount = 0;
-
-    showSegmentButton.disabled = false;
-    showSegmentButton.style.opacity = "1";
-    showSegmentButton.style.cursor = "pointer";
-
-    vvvdeoHeader.style.color = "#ff69b4";
-    vvvdeoHeader.textContent = "vvvdeo unlocked!";
-    setTimeout(() => {
-      vvvdeoHeader.style.color = "";
-      vvvdeoHeader.textContent = "vvvdeo";
-    }, 1500);
-  }
-});
+if (isLocalHost) {
+  showSegmentButton.disabled = false;
+  showSegmentButton.style.opacity = "1";
+  showSegmentButton.style.cursor = "pointer";
+} else {
+  showSegmentButton.disabled = true;
+  showSegmentButton.style.opacity = "0.5";
+  showSegmentButton.style.cursor = "not-allowed";
+}
 
 showTrimButton.addEventListener("click", () => {
   ffmpegInputsContainer.style.display = "flex";
@@ -389,7 +380,7 @@ speedupButton.addEventListener("click", async () => {
       } else {
         console.error(
           "Error fetching speedup video. Status:",
-          speedupVideoResponse.status,
+          speedupVideoResponse.status
         );
         const errorText = await speedupVideoResponse.text();
         console.error("Error details:", errorText);
@@ -409,7 +400,7 @@ speedupButton.addEventListener("click", async () => {
 // VIDEO SEGMENTATION
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 const inferenceVideoButtonElement = document.getElementById(
-  "inference-video-btn",
+  "inference-video-btn"
 );
 let coordinates = [];
 let labels = [];
@@ -592,10 +583,10 @@ imageInput.addEventListener("change", (event) => {
 inferenceVideoButtonElement.addEventListener("click", async () => {
   console.log("GIVE ME CREDITS FOR INFERENCE");
 
-  if (videoPlayer.duration > 5) {
-    alert("Video must be 5 seconds or shorter. Please trim the video.");
-    return;
-  }
+  // if (videoPlayer.duration > 5) {
+  //   alert("Video must be 5 seconds or shorter. Please trim the video.");
+  //   return;
+  // }
 
   const imageFile = imageInput.files[0];
   const videoFile = await getVideoFile();
@@ -624,10 +615,11 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     JSON.stringify({
       coordinates: coordinates,
       labels: labels,
-    }),
+    })
   );
 
   loadingSpinnerContainer.style.display = "flex";
+  loadingText.innerHTML = LOCAL_SEGMENTATION_LOADING_MESSAGE;
   inferenceVideoButtonElement.hidden = true;
   addPositiveLabelButton.disabled = true;
   addNegativeLabelButton.disabled = true;
@@ -646,7 +638,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`,
+        errorData.error || `HTTP error! status: ${response.status}`
       );
     }
 
@@ -673,6 +665,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
   } finally {
     loadingSpinnerContainer.style.display = "none";
     inferenceVideoButtonElement.hidden = false;
+    loadingText.innerHTML = DEFAULT_LOADING_MESSAGE;
   }
 });
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

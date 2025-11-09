@@ -1,17 +1,12 @@
-# -- Stage 1 -- #
-# Compile the Go app.
-FROM golang:1.22.3-alpine as builder
+FROM golang:1.22.3-alpine AS builder
 WORKDIR /app
 
-# Copy the necessary files from the project structure
 COPY . .
 
 # Generate vendor directory and build
 RUN go mod vendor && \
     go build -mod=vendor -o bin/vvvdeo
 
-# -- Stage 2 -- #
-# Create the final environment with the latest FFmpeg.
 FROM alpine:latest
 
 # Install the latest FFmpeg and other dependencies
@@ -26,5 +21,4 @@ COPY --from=builder /app/bin/vvvdeo /usr/local/bin/
 # Ensure the binary is executable
 RUN chmod +x /usr/local/bin/vvvdeo
 
-# Set the command
 CMD ["vvvdeo"]

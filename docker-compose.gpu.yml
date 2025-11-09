@@ -1,0 +1,9 @@
+services:
+  sam2seg:
+    device_requests:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility

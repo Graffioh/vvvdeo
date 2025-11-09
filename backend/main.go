@@ -5,9 +5,7 @@ import (
 	"net/http"
 	"os"
 	"veedeo/events"
-	"veedeo/storage"
 	"veedeo/video"
-	"veedeo/websocket"
 
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -49,13 +47,7 @@ func setupServerHandler() http.Handler {
 
 	mux := http.NewServeMux()
 
-	// mux.HandleFunc("/video/inference", video.VideoInferenceHandler)
 	mux.HandleFunc("/video/local-inference", video.VideoLocalInferenceHandler)
-	mux.HandleFunc("/presigned-url/put", storage.PresignedPutURLHandler)
-	mux.HandleFunc("/presigned-url/get", storage.PresignedGetURLHandler)
-	// mux.HandleFunc("/notification/video-upload", notification.VideoUploadNotificationFromWorkerHandler)
-	// mux.HandleFunc("/notification/frames-extraction", notification.FrameNotificationFromWorkerHandler)
-	mux.HandleFunc("/ws", websocket.WebSocketHandler)
 	mux.HandleFunc("/video/speedup", video.VideoSpeedupHandler)
 	mux.HandleFunc("/ffmpeg-events", events.FfmpegEventsHandler)
 	mux.Handle("/metrics", promhttp.Handler())
