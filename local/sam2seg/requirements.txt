@@ -1,7 +1,7 @@
 accelerate==1.4.0
 git+https://github.com/facebookresearch/sam2.git
 aiohappyeyeballs==2.4.4
-aiohttp==3.11.8
+aiohttp==3.11.11
 aiosignal==1.3.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
@@ -22,14 +22,14 @@ cycler==0.12.1
 defusedxml==0.7.1
 exceptiongroup==1.2.2
 fal_client==0.5.6
-fastapi==0.115.5
+fastapi==0.115.6
 filelock==3.16.1
 fonttools==4.54.1
 frozenlist==1.5.0
 fsspec==2024.10.0
 grpclib==0.4.7
 h11==0.14.0
-h2==4.1.0
+h2==4.1.0.post1
 hpack==4.0.0
 httpcore==1.0.7
 httpx==0.28.0
@@ -65,7 +65,7 @@ pkginfo==1.11.2
 plot==0.6.5
 portalocker==2.10.1
 propcache==0.2.0
-protobuf==5.29.0
+protobuf==5.29.1
 psutil==7.0.0
 pycryptodomex==3.21.0
 pydantic==2.10.2
@@ -89,7 +89,7 @@ shellingham==1.5.4
 sigtools==4.0.1
 six==1.16.0
 sniffio==1.3.1
-starlette==0.41.3
+starlette==0.45.2
 supervision==0.18.0
 sympy==1.13.1
 synchronicity==0.9.3
@@ -98,7 +98,7 @@ tokenizers==0.21.0
 toml==0.10.2
 tomli==2.2.1
 tqdm==4.67.0
-transformers==4.49.0
+transformers==4.49.2
 typer==0.14.0
 types-certifi==2021.10.8.3
 types-PyYAML==6.0.12.20240917
@@ -107,7 +107,7 @@ types-toml==0.10.8.20240310
 typing==3.7.4.3
 typing_extensions==4.12.2
 tzdata==2024.2
-urllib3==2.2.3
+urllib3==2.2.5
 uvicorn==0.32.1
 watchfiles==1.0.0
 yarl==1.18.0
