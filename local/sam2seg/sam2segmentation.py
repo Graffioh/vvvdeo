@@ -4,19 +4,12 @@ import json
 import numpy as np
 import torch
 from flask import Flask, request, jsonify, send_file
-from sam2.build_sam import build_sam2_video_predictor
-from PIL import Image, ImageOps, ImageFilter
-import time
 import cv2
 import supervision as sv
 import subprocess
-import shutil
-import requests
 import tempfile
-import zipfile
 import logging
 from logging.handlers import RotatingFileHandler
-import torch
 from sam2.sam2_video_predictor import SAM2VideoPredictor
 
 app = Flask(__name__)
@@ -28,9 +21,26 @@ log_formatter = logging.Formatter(
 log_handler = RotatingFileHandler('app.log', maxBytes=1000000, backupCount=3)
 log_handler.setFormatter(log_formatter)
 log_handler.setLevel(logging.DEBUG)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.DEBUG)
+
 app.logger.addHandler(log_handler)
+app.logger.addHandler(console_handler)
 app.logger.setLevel(logging.DEBUG)
+app.logger.propagate = False
 app.logger.info("Starting the application...")
+
+SAM2SEG_SHARED_DIR = os.environ.get("SAM2SEG_SHARED_DIR")
+if SAM2SEG_SHARED_DIR:
+    SAM2SEG_SHARED_DIR = os.path.abspath(SAM2SEG_SHARED_DIR)
+else:
+    SAM2SEG_SHARED_DIR = os.path.abspath("./")
+
+SHARED_VIDEO_DIR = os.path.join(SAM2SEG_SHARED_DIR, "video")
+SHARED_FRAMES_DIR = os.path.join(SAM2SEG_SHARED_DIR, "frames")
+SHARED_LOGO_PATH = os.path.join(SAM2SEG_SHARED_DIR, "vvvdeo-logo.png")
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -90,8 +100,6 @@ predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 #     except requests.exceptions.RequestException as e:
 #         app.logger.exception("Failed to download the original video")
 #         raise ValueError(f"Failed to download video: {e}")
-
-#     return local_video_path
 
 # def download_and_extract_zip(zip_url, temp_dir):
 #     zip_path = os.path.join(temp_dir, "downloaded_archive.zip")
@@ -192,10 +200,16 @@ def prepare_overlay_img(overlay_img_file):
 
 def prepare_logo_img():
     logo_img = None
-    logo_img_name = "vvvdeo-logo.png"
-    if logo_img_name:
-        logo_img = load_and_prepare_image(f"./{logo_img_name}")
-        app.logger.info("Logo image loaded and prepared.")
+    if os.path.exists(SHARED_LOGO_PATH):
+        logo_img = load_and_prepare_image(SHARED_LOGO_PATH)
+        app.logger.info("Logo image loaded and prepared from %s.", SHARED_LOGO_PATH)
+    else:
+        fallback_path = os.path.join(os.path.abspath("./"), "vvvdeo-logo.png")
+        if os.path.exists(fallback_path):
+            logo_img = load_and_prepare_image(fallback_path)
+            app.logger.info("Logo image loaded and prepared from %s.", fallback_path)
+        else:
+            app.logger.warning("Logo image not found in shared or local paths.")
 
     return logo_img
 
@@ -270,6 +284,14 @@ def reencode_audio_in_video(temp_dir, local_video_path):
     return output_video
 
 def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img):
+    total_frames = len(frames_paths)
+    if total_frames == 0:
+        app.logger.warning("No frames found for propagation.")
+        return
+
+    next_log_threshold = 10.0
+    percentage_step = 10.0
+
     with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
         for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
             if not os.path.exists(frames_paths[frame_idx]):
@@ -296,6 +318,17 @@ def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_pa
             # combine the frame with the others frames to create the final modified video
             sink.write_frame(final_frame_with_logo)
 
+            processed_fraction = float(frame_idx + 1) / float(max(total_frames, 1))
+            processed_percentage = processed_fraction * 100.0
+            if processed_percentage >= next_log_threshold or processed_fraction >= 1.0:
+                app.logger.info(
+                    "Propagation progress: %.1f%% (%d/%d frames)",
+                    processed_percentage,
+                    frame_idx + 1,
+                    total_frames,
+                )
+                next_log_threshold = processed_percentage + percentage_step
+
 
 @app.route("/segment", methods=["POST"])
 def segment():
@@ -318,8 +351,25 @@ def segment():
             # local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
 
             video_name = "to_segment.mp4"
-            local_video_path = "./video/" + video_name
-            local_frames_path = "./frames/"
+            local_video_path = os.path.join(SHARED_VIDEO_DIR, video_name)
+            local_frames_path = SHARED_FRAMES_DIR
+
+            if not os.path.exists(local_video_path):
+                parent_dir = os.path.dirname(local_video_path)
+                if os.path.isdir(parent_dir):
+                    contents = os.listdir(parent_dir)
+                else:
+                    contents = "<missing directory>"
+                app.logger.error(
+                    "Local video not found at %s. Directory contents: %s",
+                    local_video_path,
+                    contents,
+                )
+                raise ValueError(f"Video file not found: {local_video_path}")
+
+            video_size = os.path.getsize(local_video_path)
+            app.logger.debug("Local video located at %s (size: %d bytes)", local_video_path, video_size)
+
             frames_paths = sorted(sv.list_files_with_extensions(directory=local_frames_path, extensions=["jpg"]))
 
             try:
@@ -406,6 +456,7 @@ def segment():
             "status": "success (no video sent)"
         })
     except Exception as e:
+        app.logger.exception("Unhandled exception while processing segmentation request")
         return jsonify({"error": str(e), "status": "error"}), 500
 
 if __name__ == "__main__":

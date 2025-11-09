@@ -21,45 +21,28 @@ The backend (written in Go) is dockerized and deployed on Fly.io.
 
 **It works only locally**, if you want to run on your computer, follow the instructions in the next section.
 
-The most fun feature to implement! I learned a lot about building a custom backend segmentation system by leveraging existing models (thanks to Claude for the code).
+This was the most fun feature to implement! I learned a lot about building a custom backend segmentation system by leveraging existing models (thanks to Claude for the code).
+
+### Instructions to run locally
+
+It uses **Docker**, so install it if you don’t have it already.
+
+- Run docker using whatever you like (I suggest [OrbStack](https://orbstack.dev/) instead of Docker desktop)
+- In the root dir run `docker-compose up --build`
+- Open the frontend via `https://localhost:5173` 
+- Enjoy
+
+### OLD Asynchronous Workflow
 
 It was implemented using Cloudflare Workers and Cloudflare Queues for asynchronous processing. However it's currently not working since a lot has changed, and the backend is not deployed cause I'm broke.
 
-Here's a rough diagram of the whole async workflow (shoutout to [moni](https://x.com/fr3fou) for the help):
+Here's a rough diagram of the whole (old) async workflow (shoutout to [moni](https://x.com/fr3fou) for the help):
 
 <img width="714" alt="image" src="https://github.com/user-attachments/assets/d5d7dee8-e98f-4532-8372-fe6f1dd16c8b" />
 
-## Local Setup
-
-### Frontend
-
-Inside the ```/frontend``` folder:
-
-- Create a .env file and add the following line:
-  ```VITE_BACKEND_URL=http://localhost:8080```
-- Run the development server:
-  ```npm run dev```
-
-### Backend
-
-Inside the ```/backend``` folder:
-
-- Create a .env file and add the following line:
-  ```APP_ENV=DEV```
-- Start the backend server:
-  ```go run main.go```
-
-#### Segmentation
-
-Inside the ```/sam2seg``` folder:
-
-- Install SAM2 by following the official instructions: https://github.com/facebookresearch/sam2#installation
-- Run this to install required packages:
-  ```pip install -r requirements.txt```
-- Run the Python segmentation backend:
-  ```python sam2segmentation.py```
-
-**NOTE for Mac users**: If you are on M1/M2 the model will use MPS and fallback to CPU for unsupported ops, but sometimes MPS is much slower than CPU so use at your own risk.
+This was discontinued because:
+- It was a setup built to learn how async processing works
+- Renting a good GPU and keep it running + CloudFlare subscription = too expensive right now
 
 ----
 

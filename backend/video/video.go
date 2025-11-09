@@ -482,8 +482,14 @@ func VideoSpeedupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func saveVideoToDirectory(file multipart.File, filename string) error {
-	videoDir := "../sam2seg/video"
+func getSam2SegBaseDir() string {
+	if dir := os.Getenv("SAM2SEG_SHARED_DIR"); dir != "" {
+		return dir
+	}
+	return "../local/sam2seg"
+}
+
+func saveVideoToDirectory(file multipart.File, videoDir, filename string) error {
 	err := os.MkdirAll(videoDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create video directory: %w", err)
@@ -504,8 +510,7 @@ func saveVideoToDirectory(file multipart.File, filename string) error {
 	return nil
 }
 
-func extractFramesToDirectory(videoPath string) error {
-	framesDir := "../sam2seg/frames"
+func extractFramesToDirectory(videoPath, framesDir string) error {
 	err := os.MkdirAll(framesDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create frames directory: %w", err)
@@ -525,13 +530,11 @@ func extractFramesToDirectory(videoPath string) error {
 	return nil
 }
 
-func cleanDirectories() error {
-	videoDir := "../sam2seg/video"
+func cleanDirectories(videoDir, framesDir string) error {
 	if err := os.RemoveAll(videoDir); err != nil {
 		return fmt.Errorf("failed to clean video directory: %w", err)
 	}
 
-	framesDir := "../sam2seg/frames"
 	if err := os.RemoveAll(framesDir); err != nil {
 		return fmt.Errorf("failed to clean frames directory: %w", err)
 	}
@@ -545,8 +548,12 @@ func VideoLocalInferenceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	baseDir := getSam2SegBaseDir()
+	videoDir := filepath.Join(baseDir, "video")
+	framesDir := filepath.Join(baseDir, "frames")
+
 	// clean local dir before attempting a new segmentation
-	if err := cleanDirectories(); err != nil {
+	if err := cleanDirectories(videoDir, framesDir); err != nil {
 		http.Error(w, fmt.Sprintf("Error cleaning directories: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -565,14 +572,14 @@ func VideoLocalInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer videoFile.Close()
 
-	err = saveVideoToDirectory(videoFile, "to_segment.mp4")
+	err = saveVideoToDirectory(videoFile, videoDir, "to_segment.mp4")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error saving video: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	videoPath := filepath.Join("../sam2seg/video", "to_segment.mp4")
-	err = extractFramesToDirectory(videoPath)
+	videoPath := filepath.Join(videoDir, "to_segment.mp4")
+	err = extractFramesToDirectory(videoPath, framesDir)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error extracting frames: %v", err), http.StatusInternalServerError)
 		return
@@ -624,7 +631,12 @@ func VideoLocalInferenceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send the POST inference request to the python backend
-	pythonURL := "http://localhost:9000/segment"
+	// Use environment variable for Docker compatibility, default to localhost for local dev
+	pythonHost := os.Getenv("SAM2SEG_HOST")
+	if pythonHost == "" {
+		pythonHost = "localhost:9000"
+	}
+	pythonURL := fmt.Sprintf("http://%s/segment", pythonHost)
 	req, err := http.NewRequest("POST", pythonURL, body)
 	if err != nil {
 		http.Error(w, "Error creating Python server request", http.StatusInternalServerError)

@@ -11,6 +11,7 @@ const loadingSpinnerContainer = document.getElementById(
   "loading-spinner-container",
 );
 const ffmpegMessage = document.getElementById("ffmpeg-message");
+const loadingText = document.getElementById("loading-text");
 
 // random filename generation
 const adjectives = [
@@ -52,6 +53,9 @@ let trimmedVideoFile = null;
 let ffmpeg = null;
 const trim = async (file, startTrim, endTrim) => {
   loadingSpinnerContainer.style.display = "flex";
+  loadingText.innerHTML =
+    "Segmentation in progress. Check local Docker logs for detailed progress.";
+  ffmpegMessage.innerHTML = "";
   if (ffmpeg === null) {
     ffmpeg = new FFmpeg();
     ffmpeg.on("log", ({ message }) => {
@@ -185,36 +189,21 @@ const speedupFactorContainer = document.getElementById(
 const speedupFactorInput = document.getElementById("speedup-factor-input");
 const showSegmentButton = document.getElementById("show-segment-btn");
 
-// Easter egg to enable the Segment button after 3 vvvdeo header clicks
-const vvvdeoHeader = document.getElementById("vvvdeo-header");
-let vvvdeoHeaderEasterEggClickCount = 0;
-let vvvdeoHeaderEasterEggClicTimeout = null;
+const isLocalHost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname === "::1" ||
+  window.location.hostname.endsWith(".local");
 
-vvvdeoHeader.addEventListener("click", () => {
-  vvvdeoHeaderEasterEggClickCount++;
-
-  if (vvvdeoHeaderEasterEggClickCount === 1) {
-    vvvdeoHeaderEasterEggClicTimeout = setTimeout(() => {
-      vvvdeoHeaderEasterEggClickCount = 0;
-    }, 1000);
-  }
-
-  if (vvvdeoHeaderEasterEggClickCount === 3) {
-    clearTimeout(vvvdeoHeaderEasterEggClicTimeout);
-    vvvdeoHeaderEasterEggClickCount = 0;
-
-    showSegmentButton.disabled = false;
-    showSegmentButton.style.opacity = "1";
-    showSegmentButton.style.cursor = "pointer";
-
-    vvvdeoHeader.style.color = "#ff69b4";
-    vvvdeoHeader.textContent = "vvvdeo unlocked!";
-    setTimeout(() => {
-      vvvdeoHeader.style.color = "";
-      vvvdeoHeader.textContent = "vvvdeo";
-    }, 1500);
-  }
-});
+if (isLocalHost) {
+  showSegmentButton.disabled = false;
+  showSegmentButton.style.opacity = "1";
+  showSegmentButton.style.cursor = "pointer";
+} else {
+  showSegmentButton.disabled = true;
+  showSegmentButton.style.opacity = "0.5";
+  showSegmentButton.style.cursor = "not-allowed";
+}
 
 showTrimButton.addEventListener("click", () => {
   ffmpegInputsContainer.style.display = "flex";
@@ -673,6 +662,7 @@ inferenceVideoButtonElement.addEventListener("click", async () => {
   } finally {
     loadingSpinnerContainer.style.display = "none";
     inferenceVideoButtonElement.hidden = false;
+    loadingText.innerHTML = "Crafting the video...";
   }
 });
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
