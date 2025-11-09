@@ -29,19 +29,20 @@ It uses **Docker**, so install it if you don’t have it already.
 
 - Run docker using whatever you like (I suggest [OrbStack](https://orbstack.dev/) instead of Docker desktop)
 - In the root dir run `docker-compose up --build`
+- *(Optional but Recommended if you have a NVIDIA GPU)* Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and start the stack with `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build` to expose CUDA inside the `sam2seg` container
 - Open the frontend via `https://localhost:5173` 
 - Enjoy
 
 ### OLD Asynchronous Workflow
 
-It was implemented using Cloudflare Workers and Cloudflare Queues for asynchronous processing. However it's currently not working since a lot has changed, and the backend is not deployed cause I'm broke.
+It was implemented using Cloudflare Workers and Cloudflare Queues for asynchronous processing. However currently it's not working (and discontinues) since a lot has changed.
 
 Here's a rough diagram of the whole (old) async workflow (shoutout to [moni](https://x.com/fr3fou) for the help):
 
 <img width="714" alt="image" src="https://github.com/user-attachments/assets/d5d7dee8-e98f-4532-8372-fe6f1dd16c8b" />
 
 This was discontinued because:
-- It was a setup built to learn how async processing works
+- It was a setup built to learn how async processing/workflow works
 - Renting a good GPU and keep it running + CloudFlare subscription = too expensive right now
 
 ----

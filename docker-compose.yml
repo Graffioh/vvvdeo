@@ -6,9 +6,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - APP_ENV=DEV
-      - SAM2SEG_HOST=sam2seg:9000
-      - SAM2SEG_SHARED_DIR=/data
+      APP_ENV: DEV
+      SAM2SEG_HOST: sam2seg:9000
+      SAM2SEG_SHARED_DIR: /data
     volumes:
       - ./local/sam2seg:/data
     depends_on:
@@ -23,7 +23,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_BACKEND_URL=http://localhost:8080
+      VITE_BACKEND_URL: http://localhost:8080
     volumes:
       # Mount source code for hot reloading
       - ./frontend:/app
@@ -38,7 +38,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      - SAM2SEG_SHARED_DIR=/data
+      SAM2SEG_SHARED_DIR: /data
     volumes:
       - ./local/sam2seg:/data
     networks:
