@@ -25,6 +25,8 @@ This was the most fun feature to implement! I learned a lot about building a cus
 
 ### Instructions to run locally
 
+Serving the segmentation backend local API with `FastAPI`.
+
 It uses **Docker**, so install it if you don’t have it already.
 
 - Run docker using whatever you like (I suggest [OrbStack](https://orbstack.dev/) instead of Docker desktop)

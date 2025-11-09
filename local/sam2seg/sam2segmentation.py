@@ -3,34 +3,41 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import json
 import numpy as np
 import torch
-from flask import Flask, request, jsonify, send_file
+from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 import cv2
 import supervision as sv
 import subprocess
 import tempfile
 import logging
 from logging.handlers import RotatingFileHandler
+import shutil
+from typing import Optional
+from starlette.background import BackgroundTask
 from sam2.sam2_video_predictor import SAM2VideoPredictor
 
-app = Flask(__name__)
+app = FastAPI()
 
 # logging setup
 log_formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
 )
-log_handler = RotatingFileHandler('app.log', maxBytes=1000000, backupCount=3)
-log_handler.setFormatter(log_formatter)
-log_handler.setLevel(logging.DEBUG)
+logger = logging.getLogger("sam2seg")
+if not logger.handlers:
+    log_handler = RotatingFileHandler('app.log', maxBytes=1000000, backupCount=3)
+    log_handler.setFormatter(log_formatter)
+    log_handler.setLevel(logging.DEBUG)
 
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(log_formatter)
-console_handler.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+    console_handler.setLevel(logging.DEBUG)
 
-app.logger.addHandler(log_handler)
-app.logger.addHandler(console_handler)
-app.logger.setLevel(logging.DEBUG)
-app.logger.propagate = False
-app.logger.info("Starting the application...")
+    logger.addHandler(log_handler)
+    logger.addHandler(console_handler)
+
+logger.setLevel(logging.DEBUG)
+logger.propagate = False
+logger.info("Starting the application...")
 
 SAM2SEG_SHARED_DIR = os.environ.get("SAM2SEG_SHARED_DIR")
 if SAM2SEG_SHARED_DIR:
@@ -48,7 +55,7 @@ if torch.cuda.is_available():
 #    device = torch.device("mps")
 else:
     device = torch.device("cpu")
-print(f"using device: {device}")
+logger.info("Using device: %s", device)
 
 if device.type == "cuda":
     # use bfloat16 for the entire notebook
@@ -58,7 +65,7 @@ if device.type == "cuda":
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 elif device.type == "mps":
-    print(
+    logger.warning(
         "\nSupport for MPS devices is preliminary. SAM 2 is trained with CUDA and might "
         "give numerically different outputs and sometimes degraded performance on MPS. "
         "See e.g. https://github.com/pytorch/pytorch/issues/84936 for a discussion."
@@ -127,12 +134,12 @@ predictor = SAM2VideoPredictor.from_pretrained(model_str, device=device)
 
 def load_and_prepare_image(image_path, required_format="RGBA"):
     if not os.path.exists(image_path):
-        app.logger.error(f"Image file not found: {image_path}.")
+        logger.error(f"Image file not found: {image_path}.")
         raise ValueError(f"Image file not found: {image_path}")
 
     image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
     if image is None:
-        app.logger.error(f"Failed to load image: {image_path}.")
+        logger.error(f"Failed to load image: {image_path}.")
         raise ValueError(f"Failed to load image: {image_path}")
 
     if len(image.shape) == 2:
@@ -143,7 +150,7 @@ def load_and_prepare_image(image_path, required_format="RGBA"):
             alpha_channel = np.ones(image.shape[:2], dtype=image.dtype) * 255
             image = cv2.merge([image, alpha_channel])
         elif len(image.shape) != 3 or image.shape[2] != 4:
-            app.logger.error("Image is not in RGB or RGBA format!")
+            logger.error("Image is not in RGB or RGBA format!")
             raise ValueError(f"Image must be in RGB or RGBA format. Current shape: {image.shape}")
 
     return image
@@ -184,14 +191,24 @@ def apply_image_to_segmentation(frame, masks, overlay_img):
 
     return result_frame
 
-def prepare_overlay_img(overlay_img_file):
-    if not overlay_img_file:
-        app.logger.exception("Overlay image file not found!")
+def prepare_overlay_img(overlay_img_file: Optional[UploadFile]):
+    if overlay_img_file is None:
+        logger.exception("Overlay image file not found!")
         raise ValueError("Overlay image file not found!")
 
-    file_bytes = np.frombuffer(overlay_img_file.read(), np.uint8)
+    try:
+        overlay_img_file.file.seek(0)
+        file_bytes = np.frombuffer(overlay_img_file.file.read(), np.uint8)
+    except Exception as exc:
+        logger.exception("Failed to read overlay image file.")
+        raise ValueError("Failed to read overlay image file.") from exc
+
     overlay_img = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
-    if overlay_img is not None and overlay_img.shape[-1] != 4:
+    if overlay_img is None:
+        logger.error("Failed to decode overlay image.")
+        raise ValueError("Failed to decode overlay image.")
+
+    if overlay_img.shape[-1] != 4:
         b, g, r = cv2.split(overlay_img)[:3]
         alpha = np.full((overlay_img.shape[0], overlay_img.shape[1]), 255, dtype=np.uint8)
         overlay_img = cv2.merge((b, g, r, alpha))
@@ -202,14 +219,14 @@ def prepare_logo_img():
     logo_img = None
     if os.path.exists(SHARED_LOGO_PATH):
         logo_img = load_and_prepare_image(SHARED_LOGO_PATH)
-        app.logger.info("Logo image loaded and prepared from %s.", SHARED_LOGO_PATH)
+        logger.info("Logo image loaded and prepared from %s.", SHARED_LOGO_PATH)
     else:
         fallback_path = os.path.join(os.path.abspath("./"), "vvvdeo-logo.png")
         if os.path.exists(fallback_path):
             logo_img = load_and_prepare_image(fallback_path)
-            app.logger.info("Logo image loaded and prepared from %s.", fallback_path)
+            logger.info("Logo image loaded and prepared from %s.", fallback_path)
         else:
-            app.logger.warning("Logo image not found in shared or local paths.")
+            logger.warning("Logo image not found in shared or local paths.")
 
     return logo_img
 
@@ -257,8 +274,8 @@ def reencode_audio_in_video(temp_dir, local_video_path):
         subprocess.run(audio_command, check=True)
         audio_extracted = True
     except subprocess.CalledProcessError as e:
-        app.logger.exception("Audio extraction from original video failed.")
-        print(f"Audio extraction failed: {e}")
+        logger.exception("Audio extraction from original video failed.")
+        logger.error("Audio extraction failed: %s", e)
 
     if audio_extracted:
         command = [
@@ -277,16 +294,16 @@ def reencode_audio_in_video(temp_dir, local_video_path):
 
     try:
         subprocess.run(command, check=True)
-        app.logger.info("Video successfully re-encoded")
-    except subprocess.CalledProcessError as e:
-        app.logger.exception("Error during video re-encoding!")
+        logger.info("Video successfully re-encoded")
+    except subprocess.CalledProcessError:
+        logger.exception("Error during video re-encoding!")
 
     return output_video
 
 def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img):
     total_frames = len(frames_paths)
     if total_frames == 0:
-        app.logger.warning("No frames found for propagation.")
+        logger.warning("No frames found for propagation.")
         return
 
     next_log_threshold = 10.0
@@ -295,13 +312,13 @@ def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_pa
     with sv.VideoSink(temp_dir + "/video_result.mp4", video_info=video_info) as sink:
         for frame_idx, object_ids, mask_logits in predictor.propagate_in_video(inference_state):
             if not os.path.exists(frames_paths[frame_idx]):
-                app.logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
+                logger.warning(f"Frame '{frames_paths[frame_idx]}' does not exist.")
                 continue
 
             # read the frame
             frame = cv2.imread(frames_paths[frame_idx])
             if frame is None:
-                app.logger.warning("Frame processed is 'None'")
+                logger.warning("Frame processed is 'None'")
                 continue
 
             # convert mask_logits (result tensors from inference) into masks (binary mask, 1 foreground or 0 background)
@@ -321,7 +338,7 @@ def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_pa
             processed_fraction = float(frame_idx + 1) / float(max(total_frames, 1))
             processed_percentage = processed_fraction * 100.0
             if processed_percentage >= next_log_threshold or processed_fraction >= 1.0:
-                app.logger.info(
+                logger.info(
                     "Propagation progress: %.1f%% (%d/%d frames)",
                     processed_percentage,
                     frame_idx + 1,
@@ -330,134 +347,151 @@ def propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_pa
                 next_log_threshold = processed_percentage + percentage_step
 
 
-@app.route("/segment", methods=["POST"])
-def segment():
+@app.post("/segment")
+def segment(
+    segmentationData: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
+):
+    temp_dir = tempfile.mkdtemp()
+    logger.debug("Temp directory created: %s", temp_dir)
+    cleanup_required = True
+
     try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            app.logger.debug("Temp directory created: %s", temp_dir)
+        video_name = "to_segment.mp4"
+        local_video_path = os.path.join(SHARED_VIDEO_DIR, video_name)
+        local_frames_path = SHARED_FRAMES_DIR
 
-            # get r2 bucket object key
-            # file_key = request.form.get('fileKey')
-            # if not file_key:
-            #     app.logger.error("Missing 'file_key' in request body")
-            #     return jsonify({"error": "Missing 'file_key' in request body"}), 400
-            # video_name = file_key
-
-            # fetch video and frames with presigned urls
-            # cloudflare_video_path = get_path_from_presignedurl("videos/" + file_key)
-            # local_video_path = download_video(cloudflare_video_path, temp_dir)
-            #
-            # cloudflare_frames_path = get_path_from_presignedurl("frames/" + file_key + ".zip")
-            # local_frames_path = download_and_extract_zip(cloudflare_frames_path, temp_dir)
-
-            video_name = "to_segment.mp4"
-            local_video_path = os.path.join(SHARED_VIDEO_DIR, video_name)
-            local_frames_path = SHARED_FRAMES_DIR
-
-            if not os.path.exists(local_video_path):
-                parent_dir = os.path.dirname(local_video_path)
-                if os.path.isdir(parent_dir):
-                    contents = os.listdir(parent_dir)
-                else:
-                    contents = "<missing directory>"
-                app.logger.error(
-                    "Local video not found at %s. Directory contents: %s",
-                    local_video_path,
-                    contents,
-                )
-                raise ValueError(f"Video file not found: {local_video_path}")
-
-            video_size = os.path.getsize(local_video_path)
-            app.logger.debug("Local video located at %s (size: %d bytes)", local_video_path, video_size)
-
-            frames_paths = sorted(sv.list_files_with_extensions(directory=local_frames_path, extensions=["jpg"]))
-
-            try:
-                video_info = sv.VideoInfo.from_video_path(local_video_path)
-                app.logger.debug("Video info successfully retrieved")
-            except AttributeError as e:
-                app.logger.exception("Invalid video name format")
-                raise ValueError("Invalid video name format") from e
-            except FileNotFoundError as e:
-                app.logger.exception(f"Video file not found: {video_name}")
-                raise ValueError(f"Video file not found: {video_name}") from e
-
-            # inference (initial state)
-            app.logger.debug("Initializing SAM2 predictor with frames path: %s", local_frames_path)
-            try:
-                inference_state = predictor.init_state(video_path=local_frames_path)
-                predictor.reset_state(inference_state)
-                app.logger.info("Inference state initialized and reset")
-            except Exception as e:
-                app.logger.exception(f"Failed to initialize or reset SAM2 predictor: {str(e)}")
-                return jsonify({"error": f"Failed to initialize SAM2 predictor: {str(e)}"}), 500
-
-            # get points and labels from frontend request
-            segmentation_data = request.form.get("segmentationData")
-            if not segmentation_data:
-                app.logger.error("Missing 'segmentationData' in request body")
-                return jsonify({"error": "Missing 'segmentationData' in request body"}), 400
-
-            try:
-                segmentation_data_json = json.loads(segmentation_data)
-                app.logger.debug("Segmentation Data received as JSON: %s", segmentation_data_json)
-            except json.JSONDecodeError as e:
-                app.logger.error("Error decoding segmentationData JSON: %s", str(e))
-                return jsonify({"error": "Invalid JSON in 'segmentationData'"}), 400
-
-            points = segmentation_data_json.get("coordinates", [])
-            labels = segmentation_data_json.get("labels", [])
-            if not points:
-                app.logger.error("Missing coordinates!")
-                return jsonify({"error": "Missing coordinates"}), 400
-
-            try:
-                points = np.array([[p['x'], p['y']] for p in points], dtype=np.float32)
-                labels = np.array([l for l in labels], dtype=np.int32)
-            except Exception as e:
-                app.logger.exception("Error processing points")
-                return jsonify({"error": f"Error processing points: {str(e)}"}), 500
-
-            # add points used for the segmentation
-            segmentation_frame_idx = 0
-            _, _, _ = predictor.add_new_points_or_box(
-                inference_state=inference_state,
-                frame_idx=segmentation_frame_idx,
-                obj_id=1,
-                points=points,
-                labels=labels,
+        if not os.path.exists(local_video_path):
+            parent_dir = os.path.dirname(local_video_path)
+            if os.path.isdir(parent_dir):
+                contents = os.listdir(parent_dir)
+            else:
+                contents = "<missing directory>"
+            logger.error(
+                "Local video not found at %s. Directory contents: %s",
+                local_video_path,
+                contents,
+            )
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Video file not found: {local_video_path}", "status": "error"},
             )
 
-            # prepare the image to apply on top of the segmentation
-            overlay_img_file = request.files.get("image")
-            overlay_img = prepare_overlay_img(overlay_img_file)
-            logo_img = prepare_logo_img()
+        video_size = os.path.getsize(local_video_path)
+        logger.debug("Local video located at %s (size: %d bytes)", local_video_path, video_size)
 
-            # propagate the mask to all the frames and sink them into one video
-            app.logger.info("Video propagation and sinking starting...")
-            propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img)
-            app.logger.info("Video propagation successful.")
+        frames_paths = sorted(sv.list_files_with_extensions(directory=local_frames_path, extensions=["jpg"]))
 
-            # fix audio not working by re-encoding the audio directly in the video
-            output_video = reencode_audio_in_video(temp_dir, local_video_path)
+        try:
+            video_info = sv.VideoInfo.from_video_path(local_video_path)
+            logger.debug("Video info successfully retrieved")
+        except AttributeError:
+            logger.exception("Invalid video name format")
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid video name format", "status": "error"},
+            )
+        except FileNotFoundError:
+            logger.exception("Video file not found: %s", video_name)
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Video file not found: {video_name}", "status": "error"},
+            )
 
-            # send the video to the frontend for download
-            try:
-                return send_file(
-                    output_video,
-                    mimetype='video/mp4',
-                    as_attachment=True,
-                    download_name='crafted_vvvdeo.mp4'
-                )
-            except Exception as e:
-                return jsonify({"error": f"Error sending file: {str(e)}"}), 500
+        logger.debug("Initializing SAM2 predictor with frames path: %s", local_frames_path)
+        try:
+            inference_state = predictor.init_state(video_path=local_frames_path)
+            predictor.reset_state(inference_state)
+            logger.info("Inference state initialized and reset")
+        except Exception as exc:
+            logger.exception("Failed to initialize or reset SAM2 predictor: %s", exc)
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Failed to initialize SAM2 predictor: {str(exc)}", "status": "error"},
+            )
 
-        return jsonify({
-            "status": "success (no video sent)"
-        })
-    except Exception as e:
-        app.logger.exception("Unhandled exception while processing segmentation request")
-        return jsonify({"error": str(e), "status": "error"}), 500
+        segmentation_data = segmentationData
+        if not segmentation_data:
+            logger.error("Missing 'segmentationData' in request body")
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Missing 'segmentationData' in request body", "status": "error"},
+            )
+
+        try:
+            segmentation_data_json = json.loads(segmentation_data)
+            logger.debug("Segmentation Data received as JSON: %s", segmentation_data_json)
+        except json.JSONDecodeError as exc:
+            logger.error("Error decoding segmentationData JSON: %s", exc)
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid JSON in 'segmentationData'", "status": "error"},
+            )
+
+        points = segmentation_data_json.get("coordinates", [])
+        labels = segmentation_data_json.get("labels", [])
+        if not points:
+            logger.error("Missing coordinates!")
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Missing coordinates", "status": "error"},
+            )
+
+        try:
+            points = np.array([[p['x'], p['y']] for p in points], dtype=np.float32)
+            labels = np.array(labels, dtype=np.int32)
+        except Exception as exc:
+            logger.exception("Error processing points")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error processing points: {str(exc)}", "status": "error"},
+            )
+
+        segmentation_frame_idx = 0
+        predictor.add_new_points_or_box(
+            inference_state=inference_state,
+            frame_idx=segmentation_frame_idx,
+            obj_id=1,
+            points=points,
+            labels=labels,
+        )
+
+        try:
+            overlay_img = prepare_overlay_img(image)
+        except ValueError as exc:
+            logger.exception("Overlay image preparation failed")
+            return JSONResponse(
+                status_code=400,
+                content={"error": str(exc), "status": "error"},
+            )
+
+        logo_img = prepare_logo_img()
+
+        logger.info("Video propagation and sinking starting...")
+        propagate_and_sink_in_video(inference_state, temp_dir, video_info, frames_paths, overlay_img, logo_img)
+        logger.info("Video propagation successful.")
+
+        output_video = reencode_audio_in_video(temp_dir, local_video_path)
+
+        response = FileResponse(
+            output_video,
+            media_type='video/mp4',
+            filename='crafted_vvvdeo.mp4',
+            background=BackgroundTask(shutil.rmtree, temp_dir, True),
+        )
+        cleanup_required = False
+        return response
+    except Exception as exc:
+        logger.exception("Unhandled exception while processing segmentation request")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(exc), "status": "error"},
+        )
+    finally:
+        if cleanup_required and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9000)
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=9000)
