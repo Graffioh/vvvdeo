@@ -47,6 +47,11 @@ This was discontinued because:
 - It was a setup built to learn how async processing/workflow works
 - Renting a good GPU and keep it running + CloudFlare subscription = too expensive right now
 
+### Demos
+
+[demo1](https://x.com/graffioh/status/1864004204143984955/video/1)
+[demo2](https://x.com/graffioh/status/1863957107533320533)
+
 ----
 
 I hope someone finds this messy source code useful :)
