@@ -2,6 +2,7 @@
 .ropeproject/
 
 frontend/.env
+frontend/node_modules
 
 local/sam2seg/src
 local/sam2seg/frames
